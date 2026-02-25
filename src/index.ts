@@ -7,6 +7,8 @@ dotenv.config();
 
 import authRoutes from "./routes/auth.js";
 import serverRoutes from "./routes/servers.js";
+import pushRoutes from "./routes/push.js";
+import { startPoller } from "./services/poller.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -18,6 +20,7 @@ app.use(express.json());
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
+app.use("/api/push", pushRoutes);
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 app.get("/", (_req, res) => {
@@ -28,6 +31,8 @@ app.get("/", (_req, res) => {
             health: "/api/health",
             auth: "/api/auth",
             servers: "/api/servers",
+            pushStats: "/api/push/stats",
+            pushLogs: "/api/push/logs",
         },
     });
 });
@@ -40,6 +45,9 @@ app.get("/api/health", (_req, res) => {
 // ─── Start ───────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
     console.log(`🚀 Screeps Depot server running on http://localhost:${PORT}`);
+
+    // Start the background polling service
+    startPoller();
 });
 
 export default app;

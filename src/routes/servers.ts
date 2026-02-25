@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -23,10 +24,10 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 });
 
 // ─── POST /api/servers ───────────────────────────────────────────────────────
-// Create a new Screeps server entry.
+// Create a new Screeps server entry with an auto-generated push token.
 router.post("/", async (req: AuthRequest, res: Response) => {
     try {
-        const { name, apiToken } = req.body;
+        const { name, apiToken, apiBaseUrl, pollingEnabled } = req.body;
 
         if (!name) {
             res.status(400).json({ error: "Server name is required" });
@@ -37,12 +38,75 @@ router.post("/", async (req: AuthRequest, res: Response) => {
             data: {
                 name,
                 apiToken: apiToken || null,
+                apiBaseUrl: apiBaseUrl || "https://screeps.com",
+                pollingEnabled: pollingEnabled ?? false,
+                pushToken: crypto.randomUUID(),
                 userId: req.userId!,
             },
         });
         res.status(201).json(server);
     } catch (err) {
         console.error("Create server error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── PATCH /api/servers/:id ──────────────────────────────────────────────────
+// Update server fields (name, apiToken, apiBaseUrl, pollingEnabled).
+router.patch("/:id", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as AuthRequest).userId!;
+
+        // Verify ownership
+        const existing = await prisma.screepsServer.findFirst({
+            where: { id, userId },
+        });
+        if (!existing) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        const { name, apiToken, apiBaseUrl, pollingEnabled } = req.body;
+
+        const server = await prisma.screepsServer.update({
+            where: { id },
+            data: {
+                ...(name !== undefined && { name }),
+                ...(apiToken !== undefined && { apiToken }),
+                ...(apiBaseUrl !== undefined && { apiBaseUrl }),
+                ...(pollingEnabled !== undefined && { pollingEnabled }),
+            },
+        });
+        res.json(server);
+    } catch (err) {
+        console.error("Update server error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── POST /api/servers/:id/regenerate-token ──────────────────────────────────
+// Regenerate the push token for a server.
+router.post("/:id/regenerate-token", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as AuthRequest).userId!;
+
+        const existing = await prisma.screepsServer.findFirst({
+            where: { id, userId },
+        });
+        if (!existing) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        const server = await prisma.screepsServer.update({
+            where: { id },
+            data: { pushToken: crypto.randomUUID() },
+        });
+        res.json({ pushToken: server.pushToken });
+    } catch (err) {
+        console.error("Regenerate token error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 });

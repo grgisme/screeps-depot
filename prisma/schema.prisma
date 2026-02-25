@@ -25,11 +25,14 @@ model User {
 // ─── Screeps Server ──────────────────────────────────────────────────────────
 // Represents a Screeps server instance (e.g. "World", "Season 8").
 model ScreepsServer {
-  id        String   @id @default(uuid())
-  name      String   // e.g. "World", "Season 8"
-  apiToken  String?  // Screeps API token / key for this server
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String   // e.g. "World", "Season 8"
+  apiToken       String?  // Screeps API token / key for this server
+  pushToken      String   @unique @default(uuid()) // Static token for push endpoints
+  apiBaseUrl     String   @default("https://screeps.com") // Base URL for the Screeps API
+  pollingEnabled Boolean  @default(false) // Whether background polling is enabled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
