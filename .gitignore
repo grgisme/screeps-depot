@@ -161,6 +161,7 @@ pnpm-debug.log*
 # Prisma (ignores local SQLite files if you ever test locally before pushing to Postgres)
 *.db
 *.db-journal
+src/generated/
 
 # OS generated files
 .DS_Store

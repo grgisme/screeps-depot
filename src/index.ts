@@ -5,8 +5,8 @@ import dotenv from "dotenv";
 // Load environment variables before anything else
 dotenv.config();
 
-import authRoutes from "./routes/auth";
-import serverRoutes from "./routes/servers";
+import authRoutes from "./routes/auth.js";
+import serverRoutes from "./routes/servers.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
