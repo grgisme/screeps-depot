@@ -1,0 +1,43 @@
+{
+  "name": "screeps-depot",
+  "version": "1.0.0",
+  "description": "A web dashboard for monitoring Screeps servers — stats, logs, and API integration.",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "prisma migrate deploy && node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
+  },
+  "keywords": [
+    "screeps",
+    "dashboard",
+    "prisma",
+    "express"
+  ],
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "prisma": "^5.22.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.3.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0"
+  }
+}

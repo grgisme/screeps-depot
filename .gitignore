@@ -137,3 +137,36 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Dependencies
+node_modules/
+
+# Environment variables (CRITICAL: Never commit your Railway database URL or Screeps tokens!)
+.env
+.env.local
+.env.*.local
+
+# Build outputs (React/Frontend/TypeScript)
+dist/
+build/
+.next/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Prisma (ignores local SQLite files if you ever test locally before pushing to Postgres)
+*.db
+*.db-journal
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

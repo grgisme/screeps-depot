@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+// Stores login credentials for dashboard users.
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  servers ScreepsServer[]
+}
+
+// ─── Screeps Server ──────────────────────────────────────────────────────────
+// Represents a Screeps server instance (e.g. "World", "Season 8").
+model ScreepsServer {
+  id        String   @id @default(uuid())
+  name      String   // e.g. "World", "Season 8"
+  apiToken  String?  // Screeps API token / key for this server
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  stats Stat[]
+  logs  Log[]
+
+  @@index([userId])
+}
+
+// ─── Stat ────────────────────────────────────────────────────────────────────
+// Time-series data stored as JSON, linked to a specific server.
+model Stat {
+  id         String   @id @default(uuid())
+  data       Json     // Arbitrary time-series payload
+  recordedAt DateTime @default(now())
+
+  serverId String
+  server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@index([recordedAt])
+}
+
+// ─── Severity Enum ───────────────────────────────────────────────────────────
+enum Severity {
+  INFO
+  WARN
+  ERROR
+}
+
+// ─── Log ─────────────────────────────────────────────────────────────────────
+// Log entries with timestamp, message, and severity, linked to a server.
+model Log {
+  id        String   @id @default(uuid())
+  message   String
+  severity  Severity @default(INFO)
+  timestamp DateTime @default(now())
+
+  serverId String
+  server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@index([timestamp])
+  @@index([severity])
+}
