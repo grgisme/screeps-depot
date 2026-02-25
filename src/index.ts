@@ -19,6 +19,19 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
 
+// ─── Root ────────────────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
+    res.json({
+        name: "Screeps Depot",
+        version: "1.0.0",
+        endpoints: {
+            health: "/api/health",
+            auth: "/api/auth",
+            servers: "/api/servers",
+        },
+    });
+});
+
 // ─── Health Check ────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

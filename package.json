@@ -4,7 +4,7 @@
   "description": "A web dashboard for monitoring Screeps servers — stats, logs, and API integration.",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -22,13 +22,13 @@
   ],
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^7.4.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "prisma": "^5.22.0",
+    "prisma": "^7.4.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
