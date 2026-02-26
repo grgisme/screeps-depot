@@ -10,6 +10,7 @@ dotenv.config();
 import authRoutes from "./routes/auth.js";
 import serverRoutes from "./routes/servers.js";
 import pushRoutes from "./routes/push.js";
+import grafanaRoutes from "./routes/grafana.js";
 import { startPoller } from "./services/poller.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/servers", serverRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/grafana", grafanaRoutes);
 
 app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
