@@ -11,6 +11,8 @@ import {
 import ServerSelector from "../components/ServerSelector";
 import StatsPanel from "../components/StatsPanel";
 import LogsPanel from "../components/LogsPanel";
+import StatsCharts from "../components/StatsCharts";
+import LogViewer from "../components/LogViewer";
 
 export default function Dashboard() {
     const { token, logout } = useAuth();
@@ -243,6 +245,13 @@ export default function Dashboard() {
                             </div>
                         )}
 
+                        {/* Charts */}
+                        {activeServerId && (
+                            <div className="mb-6">
+                                <StatsCharts serverId={activeServerId} />
+                            </div>
+                        )}
+
                         {/* Data panels */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <StatsPanel stats={stats} isLoading={isLoadingData} />
@@ -252,6 +261,13 @@ export default function Dashboard() {
                                 onFilterChange={handleSeverityFilter}
                             />
                         </div>
+
+                        {/* Log Viewer */}
+                        {activeServerId && (
+                            <div className="mt-6">
+                                <LogViewer serverId={activeServerId} />
+                            </div>
+                        )}
                     </>
                 )}
             </main>

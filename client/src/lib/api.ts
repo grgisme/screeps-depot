@@ -97,3 +97,49 @@ export function getServerLogs(
     const q = severity ? `?severity=${severity}` : "";
     return apiFetch<Log[]>(`/api/servers/${serverId}/logs${q}`, { token });
 }
+
+// ─── Dashboard Charts ─────────────────────────────────────────────────────────
+export interface DashboardStatsResponse {
+    chartData: Record<string, unknown>[];
+    series: Record<string, { time: string; value: number }[]>;
+    availableMetrics: string[];
+    serverName: string;
+    from: string;
+    to: string;
+    totalPoints: number;
+}
+
+export function getDashboardStats(
+    token: string,
+    serverId: string,
+    hours: number = 24
+) {
+    return apiFetch<DashboardStatsResponse>(
+        `/api/dashboard/stats?serverId=${serverId}&hours=${hours}`,
+        { token }
+    );
+}
+
+// ─── Dashboard Logs ───────────────────────────────────────────────────────────
+export interface DashboardLogsResponse {
+    logs: Log[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+export function getDashboardLogs(
+    token: string,
+    serverId: string,
+    opts: { limit?: number; offset?: number; severity?: string; search?: string } = {}
+) {
+    const params = new URLSearchParams({ serverId });
+    if (opts.limit) params.set("limit", String(opts.limit));
+    if (opts.offset) params.set("offset", String(opts.offset));
+    if (opts.severity) params.set("severity", opts.severity);
+    if (opts.search) params.set("search", opts.search);
+    return apiFetch<DashboardLogsResponse>(
+        `/api/dashboard/logs?${params.toString()}`,
+        { token }
+    );
+}
