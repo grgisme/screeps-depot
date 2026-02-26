@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc --noEmit",
+    "build": "cd client && npm install && npm run build && cd .. && prisma generate && tsc --noEmit",
     "start": "prisma migrate deploy && tsx src/index.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

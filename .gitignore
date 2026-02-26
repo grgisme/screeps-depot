@@ -146,7 +146,9 @@ node_modules/
 .env.local
 .env.*.local
 
-# Build outputs (React/Frontend/TypeScript)
+# Build output
+dist
+client/dist (React/Frontend/TypeScript)
 dist/
 build/
 .next/

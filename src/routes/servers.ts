@@ -111,6 +111,68 @@ router.post("/:id/regenerate-token", async (req: Request<{ id: string }>, res: R
     }
 });
 
+// ─── GET /api/servers/:id/stats ──────────────────────────────────────────────
+// Get recent stats for a server (last 50).
+router.get("/:id/stats", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as AuthRequest).userId!;
+
+        // Verify ownership
+        const server = await prisma.screepsServer.findFirst({
+            where: { id, userId },
+        });
+        if (!server) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        const stats = await prisma.stat.findMany({
+            where: { serverId: id },
+            orderBy: { recordedAt: "desc" },
+            take: 50,
+        });
+        res.json(stats);
+    } catch (err) {
+        console.error("Get stats error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── GET /api/servers/:id/logs ───────────────────────────────────────────────
+// Get recent logs for a server (last 100), filterable by severity.
+router.get("/:id/logs", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as AuthRequest).userId!;
+        const severity = req.query.severity as string | undefined;
+
+        // Verify ownership
+        const server = await prisma.screepsServer.findFirst({
+            where: { id, userId },
+        });
+        if (!server) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        const where: { serverId: string; severity?: "INFO" | "WARN" | "ERROR" } = { serverId: id };
+        if (severity && ["INFO", "WARN", "ERROR"].includes(severity.toUpperCase())) {
+            where.severity = severity.toUpperCase() as "INFO" | "WARN" | "ERROR";
+        }
+
+        const logs = await prisma.log.findMany({
+            where,
+            orderBy: { timestamp: "desc" },
+            take: 100,
+        });
+        res.json(logs);
+    } catch (err) {
+        console.error("Get logs error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // ─── GET /api/servers/:id ────────────────────────────────────────────────────
 // Get a single server by ID (must belong to the authenticated user).
 router.get("/:id", async (req: Request<{ id: string }>, res: Response) => {
