@@ -137,6 +137,15 @@ async function pollUserStats(
             serverId,
         },
     });
+
+    // Log successful poll
+    await prisma.log.create({
+        data: {
+            message: `Polled user stats: GCL=${userStats.gcl}, CPU=${userStats.cpu}`,
+            severity: "INFO",
+            serverId,
+        },
+    });
 }
 
 // ─── Stats Segment (97) + Legacy Memory.stats fallback ────────────────────────

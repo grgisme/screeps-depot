@@ -15,5 +15,17 @@ export default defineConfig({
     },
     build: {
         outDir: "dist",
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes("node_modules")) {
+                        if (id.includes("recharts") || id.includes("d3-")) {
+                            return "vendor-recharts";
+                        }
+                        return "vendor";
+                    }
+                },
+            },
+        },
     },
 });
