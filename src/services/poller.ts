@@ -6,7 +6,7 @@ import {
     fetchMemoryStats,
 } from "./screepsApi.js";
 
-const DEFAULT_CRON = "*/2 * * * *"; // Every 2 minutes
+const DEFAULT_CRON = "*/1 * * * *"; // Every 1 minute
 
 /**
  * Start the background polling service.
