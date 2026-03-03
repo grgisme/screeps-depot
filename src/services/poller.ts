@@ -89,6 +89,7 @@ export async function pollServer(server: {
     const shard = server.shard || "shard3";
 
     // Run all ingestion tasks in parallel
+    const taskNames = ["userStats", "segment97", "segment98", "segment99"];
     const results = await Promise.allSettled([
         pollUserStats(opts, server.id),
         pollStatsSegment(opts, server.id, shard),
@@ -96,21 +97,33 @@ export async function pollServer(server: {
         pollFlightRecorder(opts, server.id, shard, 99),
     ]);
 
-    // Check if all tasks failed
-    const allFailed = results.every((r) => r.status === "rejected");
-    if (allFailed) {
-        throw new Error(`All polling tasks failed for ${server.apiBaseUrl}`);
-    }
-
-    // Log individual failures
-    const taskNames = ["userStats", "segment97", "segment98", "segment99"];
+    // Build per-task summary
+    const succeeded: string[] = [];
+    const failed: string[] = [];
     for (let i = 0; i < results.length; i++) {
         if (results[i].status === "rejected") {
             const reason = (results[i] as PromiseRejectedResult).reason;
-            console.warn(
-                `📡 ⚠️ ${taskNames[i]} failed for "${server.name}": ${reason instanceof Error ? reason.message : String(reason)}`
-            );
+            const msg = reason instanceof Error ? reason.message : String(reason);
+            failed.push(`${taskNames[i]}: ${msg}`);
+            console.warn(`📡 ⚠️ ${taskNames[i]} failed for "${server.name}": ${msg}`);
+        } else {
+            succeeded.push(taskNames[i]);
         }
+    }
+
+    // Write a summary log entry to the database
+    if (failed.length > 0 && failed.length < taskNames.length) {
+        await prisma.log.create({
+            data: {
+                message: `Poll partial: OK=[${succeeded.join(", ")}] FAIL=[${failed.join("; ")}]`,
+                severity: "WARN",
+                serverId: server.id,
+            },
+        }).catch(() => { });
+    }
+
+    if (failed.length === taskNames.length) {
+        throw new Error(`All polling tasks failed: ${failed.join("; ")}`);
     }
 }
 
@@ -156,24 +169,29 @@ async function pollStatsSegment(
     shard: string
 ): Promise<void> {
     // Try segment 97 first (preferred)
-    let rawSegment = await fetchMemorySegment(opts, 97, shard);
+    const rawSegment = await fetchMemorySegment(opts, 97, shard);
 
     if (rawSegment && rawSegment.trim()) {
         try {
             const parsed = JSON.parse(rawSegment);
-            // Segment 97 contains a JSON array of up to 20 tick snapshots
             const snapshots = Array.isArray(parsed) ? parsed : [parsed];
+            console.log(`📡 Segment 97: found ${snapshots.length} snapshot(s)`);
             await ingestTickStats(snapshots, serverId, shard);
             return;
         } catch (err) {
             console.warn(`📡 Segment 97 parse failed, trying Memory.stats fallback:`, err);
         }
+    } else {
+        console.log(`📡 Segment 97: empty or not set (shard=${shard}), trying Memory.stats fallback`);
     }
 
     // Fallback: try Memory.stats (legacy mode, gz-encoded)
     const memStats = await fetchMemoryStats(opts, shard);
     if (memStats) {
+        console.log(`📡 Memory.stats fallback: got data with ${Object.keys(memStats).length} keys`);
         await ingestTickStats([memStats], serverId, shard);
+    } else {
+        console.log(`📡 Memory.stats fallback: also empty — no tick stats available`);
     }
 }
 
@@ -215,9 +233,8 @@ async function ingestTickStats(
         }
     }
 
-    if (ingested > 0) {
-        console.log(`📡 Ingested ${ingested} tick stat(s) for shard ${shard}`);
-    }
+    const skipped = snapshots.length - ingested;
+    console.log(`📡 Tick stats: ingested=${ingested}, skipped/dupes=${skipped}, total=${snapshots.length}`);
 }
 
 // ─── FlightRecorder (Segments 98 & 99) ────────────────────────────────────────
@@ -229,7 +246,10 @@ async function pollFlightRecorder(
     segmentId: 98 | 99
 ): Promise<void> {
     let rawSegment = await fetchMemorySegment(opts, segmentId, shard);
-    if (!rawSegment || !rawSegment.trim()) return;
+    if (!rawSegment || !rawSegment.trim()) {
+        console.log(`📡 Segment ${segmentId}: empty or not set (shard=${shard})`);
+        return;
+    }
 
     // Segment 99 may be base-65536 packed
     if (segmentId === 99 && rawSegment.startsWith("P")) {
@@ -245,11 +265,14 @@ async function pollFlightRecorder(
     try {
         parsed = JSON.parse(rawSegment);
     } catch (err) {
-        console.warn(`📡 Segment ${segmentId} is not valid JSON`);
+        console.warn(`📡 Segment ${segmentId}: not valid JSON (length=${rawSegment.length})`);
         return;
     }
 
-    if (!parsed.entries || !Array.isArray(parsed.entries)) return;
+    if (!parsed.entries || !Array.isArray(parsed.entries)) {
+        console.log(`📡 Segment ${segmentId}: JSON parsed but no .entries array (keys: ${Object.keys(parsed).join(", ")})`);
+        return;
+    }
 
     // Rebuild chronological order from circular buffer
     const entries = parsed.entries;
@@ -305,11 +328,8 @@ async function pollFlightRecorder(
         }
     }
 
-    if (ingested > 0) {
-        console.log(
-            `📡 Ingested ${ingested} flight recorder entry(s) from segment ${segmentId}`
-        );
-    }
+    const skipped = ordered.length - ingested;
+    console.log(`📡 Segment ${segmentId}: ingested=${ingested}, skipped/dupes=${skipped}, buffer_size=${entries.length}`);
 }
 
 /**
