@@ -67,8 +67,9 @@ export function startPoller(): void {
 
 /**
  * Poll a single Screeps server: fetch user stats and save them.
+ * Exported so it can be triggered on-demand from the API.
  */
-async function pollServer(server: {
+export async function pollServer(server: {
     id: string;
     name: string;
     apiToken: string | null;

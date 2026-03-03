@@ -111,6 +111,38 @@ router.post("/:id/regenerate-token", async (req: Request<{ id: string }>, res: R
     }
 });
 
+// ─── POST /api/servers/:id/poll-now ──────────────────────────────────────────
+// Trigger an immediate poll for a server (instead of waiting for cron).
+router.post("/:id/poll-now", async (req: Request<{ id: string }>, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as AuthRequest).userId!;
+
+        const server = await prisma.screepsServer.findFirst({
+            where: { id, userId },
+        });
+        if (!server) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        if (!server.apiToken) {
+            res.status(400).json({ error: "No API token configured for this server" });
+            return;
+        }
+
+        // Import pollServer dynamically to avoid circular deps
+        const { pollServer } = await import("../services/poller.js");
+        await pollServer(server);
+
+        res.json({ ok: true, message: `Polled "${server.name}" successfully` });
+    } catch (err) {
+        console.error("Poll-now error:", err);
+        const message = err instanceof Error ? err.message : "Polling failed";
+        res.status(500).json({ error: message });
+    }
+});
+
 // ─── GET /api/servers/:id/stats ──────────────────────────────────────────────
 // Get recent stats for a server (last 50).
 router.get("/:id/stats", async (req: Request<{ id: string }>, res: Response) => {

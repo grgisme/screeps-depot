@@ -4,6 +4,7 @@ import {
     getServers,
     getServerStats,
     getServerLogs,
+    pollNow,
     type Server,
     type Stat,
     type Log,
@@ -27,6 +28,8 @@ export default function Dashboard() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalServer, setModalServer] = useState<Server | null>(null);
+    const [isPolling, setIsPolling] = useState(false);
+    const [pollStatus, setPollStatus] = useState<string | null>(null);
 
     // Load servers function to be reusable across mount and CRUD
     const fetchServers = useCallback(async () => {
@@ -144,6 +147,42 @@ export default function Dashboard() {
                         </div>
 
                         <div className="flex items-center gap-3">
+                            {activeServerId && activeServer?.apiToken && (
+                                <button
+                                    id="poll-now"
+                                    onClick={async () => {
+                                        if (!token || !activeServerId) return;
+                                        setIsPolling(true);
+                                        setPollStatus(null);
+                                        try {
+                                            const result = await pollNow(token, activeServerId);
+                                            setPollStatus(result.message);
+                                            // Refresh data after polling
+                                            loadData(activeServerId, severityFilter);
+                                        } catch (err) {
+                                            setPollStatus(err instanceof Error ? err.message : "Poll failed");
+                                        } finally {
+                                            setIsPolling(false);
+                                            setTimeout(() => setPollStatus(null), 4000);
+                                        }
+                                    }}
+                                    disabled={isPolling}
+                                    className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all disabled:opacity-50"
+                                    style={{
+                                        backgroundColor: "transparent",
+                                        border: "1px solid var(--border)",
+                                        color: "var(--accent)",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                        (e.currentTarget.style.borderColor = "var(--accent)")
+                                    }
+                                    onMouseLeave={(e) =>
+                                        (e.currentTarget.style.borderColor = "var(--border)")
+                                    }
+                                >
+                                    {isPolling ? "Polling..." : "📡 Poll Now"}
+                                </button>
+                            )}
                             <button
                                 id="refresh-data"
                                 onClick={() =>

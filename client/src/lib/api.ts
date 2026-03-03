@@ -105,6 +105,13 @@ export function regeneratePushToken(token: string, serverId: string) {
     });
 }
 
+export function pollNow(token: string, serverId: string) {
+    return apiFetch<{ ok: boolean; message: string }>(`/api/servers/${serverId}/poll-now`, {
+        method: "POST",
+        token,
+    });
+}
+
 // ─── Stats ────────────────────────────────────────────────────────────────────
 export interface Stat {
     id: string;
