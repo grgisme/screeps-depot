@@ -68,6 +68,43 @@ export function getServers(token: string) {
     return apiFetch<Server[]>("/api/servers", { token });
 }
 
+export function createServer(
+    token: string,
+    data: { name: string; apiToken?: string; apiBaseUrl?: string; pollingEnabled?: boolean }
+) {
+    return apiFetch<Server>("/api/servers", {
+        method: "POST",
+        body: data,
+        token,
+    });
+}
+
+export function updateServer(
+    token: string,
+    serverId: string,
+    data: { name?: string; apiToken?: string; apiBaseUrl?: string; pollingEnabled?: boolean }
+) {
+    return apiFetch<Server>(`/api/servers/${serverId}`, {
+        method: "PATCH",
+        body: data,
+        token,
+    });
+}
+
+export function deleteServer(token: string, serverId: string) {
+    return apiFetch<void>(`/api/servers/${serverId}`, {
+        method: "DELETE",
+        token,
+    });
+}
+
+export function regeneratePushToken(token: string, serverId: string) {
+    return apiFetch<{ pushToken: string }>(`/api/servers/${serverId}/regenerate-token`, {
+        method: "POST",
+        token,
+    });
+}
+
 // ─── Stats ────────────────────────────────────────────────────────────────────
 export interface Stat {
     id: string;

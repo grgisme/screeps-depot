@@ -13,7 +13,7 @@ import StatsPanel from "../components/StatsPanel";
 import LogsPanel from "../components/LogsPanel";
 import StatsCharts from "../components/StatsCharts";
 import LogViewer from "../components/LogViewer";
-
+import ServerModal from "../components/ServerModal";
 export default function Dashboard() {
     const { token, logout } = useAuth();
 
@@ -25,20 +25,52 @@ export default function Dashboard() {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [severityFilter, setSeverityFilter] = useState("");
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalServer, setModalServer] = useState<Server | null>(null);
+
+    // Load servers function to be reusable across mount and CRUD
+    const fetchServers = useCallback(async () => {
+        if (!token) return [];
+        try {
+            const data = await getServers(token);
+            setServers(data);
+            return data;
+        } catch (err) {
+            console.error("Failed to load servers:", err);
+            return [];
+        }
+    }, [token]);
+
     // Load servers on mount
     useEffect(() => {
         if (!token) return;
         setIsLoadingServers(true);
-        getServers(token)
+        fetchServers()
             .then((data) => {
-                setServers(data);
-                if (data.length > 0) {
-                    setActiveServerId(data[0].id);
-                }
+                if (data.length > 0) setActiveServerId(data[0].id);
             })
-            .catch((err) => console.error("Failed to load servers:", err))
             .finally(() => setIsLoadingServers(false));
-    }, [token]);
+    }, [token, fetchServers]);
+
+    async function handleServerSaved() {
+        const data = await fetchServers();
+        // If no active server, or active server was deleted, select the first one (or null)
+        if (data.length === 0) {
+            setActiveServerId(null);
+        } else if (!activeServerId || !data.find(s => s.id === activeServerId)) {
+            setActiveServerId(data[0].id);
+        }
+    }
+
+    function openCreateModal() {
+        setModalServer(null);
+        setIsModalOpen(true);
+    }
+
+    function openEditModal(server: Server) {
+        setModalServer(server);
+        setIsModalOpen(true);
+    }
 
     // Load stats + logs when active server changes
     const loadData = useCallback(
@@ -100,11 +132,12 @@ export default function Dashboard() {
                             </h1>
 
                             {!isLoadingServers && servers.length > 0 && (
-                                <div className="w-48">
+                                <div className="w-56">
                                     <ServerSelector
                                         servers={servers}
                                         activeId={activeServerId}
                                         onChange={handleServerChange}
+                                        onAddServer={openCreateModal}
                                     />
                                 </div>
                             )}
@@ -180,18 +213,18 @@ export default function Dashboard() {
                         >
                             No Screeps servers configured
                         </p>
-                        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                            Use the API to add a server:{" "}
-                            <code
-                                className="rounded px-2 py-1 text-xs"
-                                style={{
-                                    backgroundColor: "var(--bg-primary)",
-                                    color: "var(--accent)",
-                                }}
-                            >
-                                POST /api/servers
-                            </code>
+                        <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+                            Start tracking your stats and logs by adding a Screeps server.
                         </p>
+                        <button
+                            onClick={openCreateModal}
+                            className="px-6 py-3 rounded-xl font-medium transition-colors cursor-pointer"
+                            style={{ backgroundColor: "var(--accent)", color: "#fff" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-hover)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent)")}
+                        >
+                            + Add Your First Server
+                        </button>
                     </div>
                 ) : (
                     <>
@@ -227,21 +260,31 @@ export default function Dashboard() {
                                         </span>
                                     </span>
                                 </div>
-                                <span
-                                    className="text-xs font-mono"
-                                    style={{ color: "var(--text-muted)" }}
-                                >
-                                    Push token:{" "}
-                                    <code
-                                        className="rounded px-1.5 py-0.5"
-                                        style={{
-                                            backgroundColor: "var(--bg-primary)",
-                                            color: "var(--text-secondary)",
-                                        }}
+                                <div className="flex items-center gap-3">
+                                    <span
+                                        className="text-xs font-mono"
+                                        style={{ color: "var(--text-muted)" }}
                                     >
-                                        {activeServer.pushToken.slice(0, 8)}...
-                                    </code>
-                                </span>
+                                        Push token:{" "}
+                                        <code
+                                            className="rounded px-1.5 py-0.5"
+                                            style={{
+                                                backgroundColor: "var(--bg-primary)",
+                                                color: "var(--text-secondary)",
+                                            }}
+                                        >
+                                            {activeServer.pushToken.slice(0, 8)}...
+                                        </code>
+                                    </span>
+                                    <button
+                                        onClick={() => openEditModal(activeServer)}
+                                        className="p-1.5 rounded-lg opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                                        style={{ backgroundColor: "var(--bg-primary)" }}
+                                        title="Server Settings"
+                                    >
+                                        <span role="img" aria-label="settings" className="text-sm">⚙️</span>
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -269,6 +312,14 @@ export default function Dashboard() {
                             </div>
                         )}
                     </>
+                )}
+
+                {isModalOpen && (
+                    <ServerModal
+                        server={modalServer}
+                        onClose={() => setIsModalOpen(false)}
+                        onSave={handleServerSaved}
+                    />
                 )}
             </main>
         </div>
