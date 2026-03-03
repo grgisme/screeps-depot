@@ -27,7 +27,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 // Create a new Screeps server entry with an auto-generated push token.
 router.post("/", async (req: AuthRequest, res: Response) => {
     try {
-        const { name, apiToken, apiBaseUrl, pollingEnabled } = req.body;
+        const { name, apiToken, apiBaseUrl, shard, pollingEnabled } = req.body;
 
         if (!name) {
             res.status(400).json({ error: "Server name is required" });
@@ -39,6 +39,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
                 name,
                 apiToken: apiToken || null,
                 apiBaseUrl: apiBaseUrl || "https://screeps.com",
+                shard: shard || "shard3",
                 pollingEnabled: pollingEnabled ?? false,
                 pushToken: crypto.randomUUID(),
                 userId: req.userId!,
@@ -67,7 +68,7 @@ router.patch("/:id", async (req: Request<{ id: string }>, res: Response) => {
             return;
         }
 
-        const { name, apiToken, apiBaseUrl, pollingEnabled } = req.body;
+        const { name, apiToken, apiBaseUrl, shard, pollingEnabled } = req.body;
 
         const server = await prisma.screepsServer.update({
             where: { id },
@@ -75,6 +76,7 @@ router.patch("/:id", async (req: Request<{ id: string }>, res: Response) => {
                 ...(name !== undefined && { name }),
                 ...(apiToken !== undefined && { apiToken }),
                 ...(apiBaseUrl !== undefined && { apiBaseUrl }),
+                ...(shard !== undefined && { shard }),
                 ...(pollingEnabled !== undefined && { pollingEnabled }),
             },
         });

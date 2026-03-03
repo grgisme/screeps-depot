@@ -60,6 +60,7 @@ export interface Server {
     apiToken: string | null;
     pushToken: string;
     apiBaseUrl: string;
+    shard: string;
     pollingEnabled: boolean;
     createdAt: string;
 }
@@ -70,7 +71,7 @@ export function getServers(token: string) {
 
 export function createServer(
     token: string,
-    data: { name: string; apiToken?: string; apiBaseUrl?: string; pollingEnabled?: boolean }
+    data: { name: string; apiToken?: string; apiBaseUrl?: string; shard?: string; pollingEnabled?: boolean }
 ) {
     return apiFetch<Server>("/api/servers", {
         method: "POST",
@@ -82,7 +83,7 @@ export function createServer(
 export function updateServer(
     token: string,
     serverId: string,
-    data: { name?: string; apiToken?: string; apiBaseUrl?: string; pollingEnabled?: boolean }
+    data: { name?: string; apiToken?: string; apiBaseUrl?: string; shard?: string; pollingEnabled?: boolean }
 ) {
     return apiFetch<Server>(`/api/servers/${serverId}`, {
         method: "PATCH",

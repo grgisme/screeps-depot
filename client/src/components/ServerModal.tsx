@@ -15,6 +15,7 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
     const [name, setName] = useState(server?.name || "");
     const [apiToken, setApiToken] = useState(server?.apiToken || "");
     const [apiBaseUrl, setApiBaseUrl] = useState(server?.apiBaseUrl || "https://screeps.com");
+    const [shard, setShard] = useState(server?.shard || "shard3");
     const [pollingEnabled, setPollingEnabled] = useState(server?.pollingEnabled || false);
 
     const [isSaving, setIsSaving] = useState(false);
@@ -29,9 +30,9 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
 
         try {
             if (isEdit && server) {
-                await updateServer(token, server.id, { name, apiToken, apiBaseUrl, pollingEnabled });
+                await updateServer(token, server.id, { name, apiToken, apiBaseUrl, shard, pollingEnabled });
             } else {
-                await createServer(token, { name, apiToken, apiBaseUrl, pollingEnabled });
+                await createServer(token, { name, apiToken, apiBaseUrl, shard, pollingEnabled });
             }
             onSave();
             onClose();
@@ -168,6 +169,27 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                             Required if you want the depot to automatically pull your stats.
                         </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                            Shard
+                        </label>
+                        <select
+                            value={shard}
+                            onChange={e => setShard(e.target.value)}
+                            className="w-full rounded-lg px-4 py-2 text-sm outline-none transition-all cursor-pointer"
+                            style={{
+                                backgroundColor: "var(--bg-input)",
+                                border: "1px solid var(--border)",
+                                color: "var(--text-primary)",
+                            }}
+                        >
+                            <option value="shard0">shard0</option>
+                            <option value="shard1">shard1</option>
+                            <option value="shard2">shard2</option>
+                            <option value="shard3">shard3</option>
+                        </select>
                     </div>
 
                     <div className="flex items-center gap-2 mt-2">
