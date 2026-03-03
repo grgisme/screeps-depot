@@ -89,10 +89,10 @@ async function pollServer(server: {
             data: {
                 data: {
                     type: "userStats",
-                    username: userStats.user.username,
-                    gcl: userStats.user.gcl,
-                    cpu: userStats.user.cpu,
-                    credits: userStats.user.credits ?? 0,
+                    username: userStats.username,
+                    gcl: userStats.gcl,
+                    cpu: userStats.cpu,
+                    credits: userStats.credits ?? 0,
                 },
                 serverId: server.id,
             },
@@ -101,7 +101,7 @@ async function pollServer(server: {
         // Log successful poll
         await prisma.log.create({
             data: {
-                message: `Polled user stats: GCL=${userStats.user.gcl}, CPU=${userStats.user.cpu}`,
+                message: `Polled user stats: GCL=${userStats.gcl}, CPU=${userStats.cpu}`,
                 severity: "INFO",
                 serverId: server.id,
             },

@@ -24,15 +24,13 @@ interface MemoryResponse {
 
 interface UserStatsResponse {
     ok: number;
-    user: {
-        username: string;
-        gcl: number;
-        gclLevel?: number;
-        cpu: number;
-        cpuAvailable?: number;
-        credits?: number;
-        [key: string]: unknown;
-    };
+    username: string;
+    gcl: number;
+    gclLevel?: number;
+    cpu: number;
+    cpuAvailable?: number;
+    credits?: number;
+    [key: string]: unknown;
 }
 
 /**
@@ -71,13 +69,29 @@ export async function fetchMemoryPath(
 
 /**
  * Fetch user info including GCL, CPU, credits.
- * Endpoint: GET /api/auth/me
+ * Endpoint: GET /api/auth/me (undocumented but used by all community tools)
  */
 export async function fetchUserStats(
     opts: ScreepsApiOptions
 ): Promise<UserStatsResponse | null> {
     const url = new URL("/api/auth/me", opts.baseUrl);
-    return fetchScreeps<UserStatsResponse>(url, opts.token);
+    const result = await fetchScreeps<UserStatsResponse>(url, opts.token);
+
+    if (result) {
+        // Validate expected fields exist
+        if (result.ok !== 1) {
+            console.error(`Screeps /api/auth/me returned ok=${result.ok}`);
+            return null;
+        }
+        if (!result.username) {
+            console.error(
+                `Screeps /api/auth/me response missing expected fields. Keys: [${Object.keys(result).join(", ")}]`
+            );
+            return null;
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -93,9 +107,18 @@ async function fetchScreeps<T>(url: URL, token: string): Promise<T | null> {
             },
         });
 
-        if (!response.ok) {
+        if (response.status === 429) {
+            const retryAfter = response.headers.get("Retry-After") || "unknown";
             console.error(
-                `Screeps API error: ${response.status} ${response.statusText} for ${url.pathname}`
+                `Screeps API rate limited (429) for ${url.pathname}. Retry after: ${retryAfter}ms`
+            );
+            return null;
+        }
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => "(no body)");
+            console.error(
+                `Screeps API error: ${response.status} ${response.statusText} for ${url.pathname} — ${body}`
             );
             return null;
         }
