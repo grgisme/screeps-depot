@@ -187,3 +187,126 @@ export function getDashboardLogs(
         { token }
     );
 }
+
+// ─── Tick Stats (Segment 97 data) ─────────────────────────────────────────────
+
+export interface TickStatsResponse {
+    chartData: Record<string, unknown>[];
+    availableMetrics: string[];
+    totalPoints: number;
+    serverName: string;
+    from: string;
+    to: string;
+}
+
+export function getTickStats(
+    token: string,
+    serverId: string,
+    hours: number = 24,
+    metrics?: string[]
+) {
+    const params = new URLSearchParams({ serverId, hours: String(hours) });
+    if (metrics?.length) params.set("metrics", metrics.join(","));
+    return apiFetch<TickStatsResponse>(
+        `/api/tick-stats?${params.toString()}`,
+        { token }
+    );
+}
+
+export interface TickStatsLatest {
+    tick: number;
+    shard: string;
+    recordedAt: string;
+    data: Record<string, unknown>;
+}
+
+export function getTickStatsLatest(token: string, serverId: string) {
+    return apiFetch<TickStatsLatest | { data: null }>(
+        `/api/tick-stats/latest?serverId=${serverId}`,
+        { token }
+    );
+}
+
+export interface RoomsResponse {
+    tick: number;
+    recordedAt: string;
+    rooms: Record<string, Record<string, unknown>>;
+}
+
+export function getTickStatsRooms(token: string, serverId: string) {
+    return apiFetch<RoomsResponse>(
+        `/api/tick-stats/rooms?serverId=${serverId}`,
+        { token }
+    );
+}
+
+export interface ProcessesResponse {
+    chartData: Record<string, unknown>[];
+    processes: string[];
+    totalPoints: number;
+}
+
+export function getTickStatsProcesses(
+    token: string,
+    serverId: string,
+    hours: number = 1
+) {
+    return apiFetch<ProcessesResponse>(
+        `/api/tick-stats/processes?serverId=${serverId}&hours=${hours}`,
+        { token }
+    );
+}
+
+// ─── Flight Recorder ──────────────────────────────────────────────────────────
+
+export interface FlightRecorderEntryDTO {
+    id: string;
+    tick: number;
+    severity: string;
+    context: string;
+    message: string;
+    stackTrace: string | null;
+    room: string | null;
+    correlationId: string | null;
+    segment: number;
+    recordedAt: string;
+}
+
+export interface FlightRecorderResponse {
+    entries: FlightRecorderEntryDTO[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
+export function getFlightRecorderEntries(
+    token: string,
+    serverId: string,
+    opts: { severity?: string; context?: string; room?: string; page?: number; limit?: number } = {}
+) {
+    const params = new URLSearchParams({ serverId });
+    if (opts.severity) params.set("severity", opts.severity);
+    if (opts.context) params.set("context", opts.context);
+    if (opts.room) params.set("room", opts.room);
+    if (opts.page) params.set("page", String(opts.page));
+    if (opts.limit) params.set("limit", String(opts.limit));
+    return apiFetch<FlightRecorderResponse>(
+        `/api/flight-recorder?${params.toString()}`,
+        { token }
+    );
+}
+
+export interface FlightRecorderSummary {
+    lastHour: Record<string, number>;
+    lastDay: Record<string, number>;
+}
+
+export function getFlightRecorderSummary(token: string, serverId: string) {
+    return apiFetch<FlightRecorderSummary>(
+        `/api/flight-recorder/summary?serverId=${serverId}`,
+        { token }
+    );
+}

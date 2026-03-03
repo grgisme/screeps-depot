@@ -2,36 +2,33 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import {
     getServers,
-    getServerStats,
-    getServerLogs,
     pollNow,
     type Server,
-    type Stat,
-    type Log,
 } from "../lib/api";
 import ServerSelector from "../components/ServerSelector";
-import StatsPanel from "../components/StatsPanel";
-import LogsPanel from "../components/LogsPanel";
-import StatsCharts from "../components/StatsCharts";
-import LogViewer from "../components/LogViewer";
 import ServerModal from "../components/ServerModal";
+import TabNav from "../components/TabNav";
+import OverviewTab from "./OverviewTab";
+import RoomsTab from "./RoomsTab";
+import PerformanceTab from "./PerformanceTab";
+import FlightRecorderTab from "./FlightRecorderTab";
+import MarketTab from "./MarketTab";
+import SystemLogsTab from "./SystemLogsTab";
+
 export default function Dashboard() {
     const { token, logout } = useAuth();
 
     const [servers, setServers] = useState<Server[]>([]);
     const [activeServerId, setActiveServerId] = useState<string | null>(null);
-    const [stats, setStats] = useState<Stat[]>([]);
-    const [logs, setLogs] = useState<Log[]>([]);
     const [isLoadingServers, setIsLoadingServers] = useState(true);
-    const [isLoadingData, setIsLoadingData] = useState(false);
-    const [severityFilter, setSeverityFilter] = useState("");
+    const [activeTab, setActiveTab] = useState("overview");
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalServer, setModalServer] = useState<Server | null>(null);
     const [isPolling, setIsPolling] = useState(false);
     const [pollStatus, setPollStatus] = useState<string | null>(null);
 
-    // Load servers function to be reusable across mount and CRUD
+    // Load servers
     const fetchServers = useCallback(async () => {
         if (!token) return [];
         try {
@@ -44,7 +41,6 @@ export default function Dashboard() {
         }
     }, [token]);
 
-    // Load servers on mount
     useEffect(() => {
         if (!token) return;
         setIsLoadingServers(true);
@@ -57,7 +53,6 @@ export default function Dashboard() {
 
     async function handleServerSaved() {
         const data = await fetchServers();
-        // If no active server, or active server was deleted, select the first one (or null)
         if (data.length === 0) {
             setActiveServerId(null);
         } else if (!activeServerId || !data.find(s => s.id === activeServerId)) {
@@ -75,43 +70,31 @@ export default function Dashboard() {
         setIsModalOpen(true);
     }
 
-    // Load stats + logs when active server changes
-    const loadData = useCallback(
-        async (serverId: string, severity: string = "") => {
-            if (!token) return;
-            setIsLoadingData(true);
-            try {
-                const [statsData, logsData] = await Promise.all([
-                    getServerStats(token, serverId),
-                    getServerLogs(token, serverId, severity || undefined),
-                ]);
-                setStats(statsData);
-                setLogs(logsData);
-            } catch (err) {
-                console.error("Failed to load data:", err);
-            } finally {
-                setIsLoadingData(false);
-            }
-        },
-        [token]
-    );
-
-    useEffect(() => {
-        if (activeServerId) {
-            loadData(activeServerId, severityFilter);
-        }
-    }, [activeServerId, loadData, severityFilter]);
-
     function handleServerChange(id: string) {
         setActiveServerId(id);
-        setSeverityFilter("");
-    }
-
-    function handleSeverityFilter(severity: string) {
-        setSeverityFilter(severity);
     }
 
     const activeServer = servers.find((s) => s.id === activeServerId);
+
+    function renderActiveTab() {
+        if (!activeServerId) return null;
+        switch (activeTab) {
+            case "overview":
+                return <OverviewTab serverId={activeServerId} />;
+            case "rooms":
+                return <RoomsTab serverId={activeServerId} />;
+            case "performance":
+                return <PerformanceTab serverId={activeServerId} />;
+            case "flight-recorder":
+                return <FlightRecorderTab serverId={activeServerId} />;
+            case "market":
+                return <MarketTab serverId={activeServerId} />;
+            case "system-logs":
+                return <SystemLogsTab serverId={activeServerId} />;
+            default:
+                return <OverviewTab serverId={activeServerId} />;
+        }
+    }
 
     return (
         <div className="min-h-screen">
@@ -147,6 +130,13 @@ export default function Dashboard() {
                         </div>
 
                         <div className="flex items-center gap-3">
+                            {/* Poll status toast */}
+                            {pollStatus && (
+                                <span className="text-xs px-2 py-1 rounded-md" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-secondary)" }}>
+                                    {pollStatus}
+                                </span>
+                            )}
+
                             {activeServerId && activeServer?.apiToken && (
                                 <button
                                     id="poll-now"
@@ -157,8 +147,6 @@ export default function Dashboard() {
                                         try {
                                             const result = await pollNow(token, activeServerId);
                                             setPollStatus(result.message);
-                                            // Refresh data after polling
-                                            loadData(activeServerId, severityFilter);
                                         } catch (err) {
                                             setPollStatus(err instanceof Error ? err.message : "Poll failed");
                                         } finally {
@@ -183,27 +171,26 @@ export default function Dashboard() {
                                     {isPolling ? "Polling..." : "📡 Poll Now"}
                                 </button>
                             )}
-                            <button
-                                id="refresh-data"
-                                onClick={() =>
-                                    activeServerId &&
-                                    loadData(activeServerId, severityFilter)
-                                }
-                                className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all"
-                                style={{
-                                    backgroundColor: "transparent",
-                                    border: "1px solid var(--border)",
-                                    color: "var(--text-secondary)",
-                                }}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--accent)")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border)")
-                                }
-                            >
-                                ↻ Refresh
-                            </button>
+                            {activeServer && (
+                                <button
+                                    onClick={() => openEditModal(activeServer)}
+                                    className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all"
+                                    style={{
+                                        backgroundColor: "transparent",
+                                        border: "1px solid var(--border)",
+                                        color: "var(--text-secondary)",
+                                    }}
+                                    onMouseEnter={(e) =>
+                                        (e.currentTarget.style.borderColor = "var(--accent)")
+                                    }
+                                    onMouseLeave={(e) =>
+                                        (e.currentTarget.style.borderColor = "var(--border)")
+                                    }
+                                    title="Server Settings"
+                                >
+                                    ⚙️ Settings
+                                </button>
+                            )}
                             <button
                                 id="logout-btn"
                                 onClick={logout}
@@ -228,7 +215,7 @@ export default function Dashboard() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {isLoadingServers ? (
                     <div className="flex items-center justify-center py-20">
                         <div
@@ -267,89 +254,13 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <>
-                        {/* Server info bar */}
-                        {activeServer && (
-                            <div
-                                className="rounded-xl px-5 py-3 mb-6 flex items-center justify-between"
-                                style={{
-                                    backgroundColor: "var(--bg-card)",
-                                    border: "1px solid var(--border)",
-                                }}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span
-                                        className="text-sm font-medium"
-                                        style={{ color: "var(--text-primary)" }}
-                                    >
-                                        {activeServer.name}
-                                    </span>
-                                    <span
-                                        className="text-xs"
-                                        style={{ color: "var(--text-muted)" }}
-                                    >
-                                        Polling:{" "}
-                                        <span
-                                            style={{
-                                                color: activeServer.pollingEnabled
-                                                    ? "var(--success)"
-                                                    : "var(--text-muted)",
-                                            }}
-                                        >
-                                            {activeServer.pollingEnabled ? "ON" : "OFF"}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span
-                                        className="text-xs font-mono"
-                                        style={{ color: "var(--text-muted)" }}
-                                    >
-                                        Push token:{" "}
-                                        <code
-                                            className="rounded px-1.5 py-0.5"
-                                            style={{
-                                                backgroundColor: "var(--bg-primary)",
-                                                color: "var(--text-secondary)",
-                                            }}
-                                        >
-                                            {activeServer.pushToken.slice(0, 8)}...
-                                        </code>
-                                    </span>
-                                    <button
-                                        onClick={() => openEditModal(activeServer)}
-                                        className="p-1.5 rounded-lg opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-                                        style={{ backgroundColor: "var(--bg-primary)" }}
-                                        title="Server Settings"
-                                    >
-                                        <span role="img" aria-label="settings" className="text-sm">⚙️</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Charts */}
-                        {activeServerId && (
-                            <div className="mb-6">
-                                <StatsCharts serverId={activeServerId} />
-                            </div>
-                        )}
-
-                        {/* Data panels */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <StatsPanel stats={stats} isLoading={isLoadingData} />
-                            <LogsPanel
-                                logs={logs}
-                                isLoading={isLoadingData}
-                                onFilterChange={handleSeverityFilter}
-                            />
+                        {/* Tab Navigation */}
+                        <div className="mb-6">
+                            <TabNav activeTab={activeTab} onChange={setActiveTab} />
                         </div>
 
-                        {/* Log Viewer */}
-                        {activeServerId && (
-                            <div className="mt-6">
-                                <LogViewer serverId={activeServerId} />
-                            </div>
-                        )}
+                        {/* Active Tab Content */}
+                        {renderActiveTab()}
                     </>
                 )}
 

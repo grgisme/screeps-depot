@@ -5,6 +5,8 @@
  * All requests authenticate via the X-Token header.
  */
 
+import { gunzipSync } from "node:zlib";
+
 interface ScreepsApiOptions {
     baseUrl: string;
     token: string;
@@ -22,6 +24,11 @@ interface MemoryResponse {
     data: string; // gz-encoded or raw JSON prefixed with "gz:"
 }
 
+interface SegmentResponse {
+    ok: number;
+    data: string; // Raw string content of the segment
+}
+
 interface UserStatsResponse {
     ok: number;
     username: string;
@@ -32,6 +39,18 @@ interface UserStatsResponse {
     credits?: number;
     [key: string]: unknown;
 }
+
+interface WorldStatusResponse {
+    ok: number;
+    status: string; // "normal", "lost", "empty"
+}
+
+interface GameTimeResponse {
+    ok: number;
+    time: number;
+}
+
+// ─── Room Overview ────────────────────────────────────────────────────────────
 
 /**
  * Fetch room overview stats for a given room.
@@ -51,6 +70,8 @@ export async function fetchRoomOverview(
     return fetchScreeps<RoomOverviewResponse>(url, opts.token);
 }
 
+// ─── Memory ───────────────────────────────────────────────────────────────────
+
 /**
  * Fetch a memory path from the user's Memory object.
  * Endpoint: GET /api/user/memory?path=<path>&shard=<shard>
@@ -68,6 +89,61 @@ export async function fetchMemoryPath(
 }
 
 /**
+ * Fetch and decode Memory.stats (legacy mode).
+ * Handles the gz: prefix: base64 decode → gunzip → JSON.parse.
+ */
+export async function fetchMemoryStats(
+    opts: ScreepsApiOptions,
+    shard?: string
+): Promise<Record<string, unknown> | null> {
+    const response = await fetchMemoryPath(opts, "stats", shard);
+    if (!response || response.ok !== 1 || !response.data) return null;
+
+    try {
+        return decodeMemoryData(response.data);
+    } catch (err) {
+        console.error("Failed to decode Memory.stats:", err);
+        return null;
+    }
+}
+
+/**
+ * Decode Screeps memory data (handles gz: prefix).
+ */
+function decodeMemoryData(data: string): Record<string, unknown> {
+    if (data.startsWith("gz:")) {
+        const b64 = data.slice(3);
+        const buf = Buffer.from(b64, "base64");
+        const decompressed = gunzipSync(buf);
+        return JSON.parse(decompressed.toString("utf-8"));
+    }
+    // Plain JSON
+    return JSON.parse(data);
+}
+
+// ─── Segments ─────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch a raw memory segment.
+ * Endpoint: GET /api/user/memory-segment?segment=N&shard=<shard>
+ */
+export async function fetchMemorySegment(
+    opts: ScreepsApiOptions,
+    segmentId: number,
+    shard?: string
+): Promise<string | null> {
+    const url = new URL("/api/user/memory-segment", opts.baseUrl);
+    url.searchParams.set("segment", String(segmentId));
+    if (shard) url.searchParams.set("shard", shard);
+
+    const result = await fetchScreeps<SegmentResponse>(url, opts.token);
+    if (!result || result.ok !== 1) return null;
+    return result.data ?? null;
+}
+
+// ─── User Info ────────────────────────────────────────────────────────────────
+
+/**
  * Fetch user info including GCL, CPU, credits.
  * Endpoint: GET /api/auth/me (undocumented but used by all community tools)
  */
@@ -78,7 +154,6 @@ export async function fetchUserStats(
     const result = await fetchScreeps<UserStatsResponse>(url, opts.token);
 
     if (result) {
-        // Validate expected fields exist
         if (result.ok !== 1) {
             console.error(`Screeps /api/auth/me returned ok=${result.ok}`);
             return null;
@@ -94,8 +169,35 @@ export async function fetchUserStats(
     return result;
 }
 
+// ─── World Status & Game Time ─────────────────────────────────────────────────
+
 /**
- * Internal helper to make authenticated GET requests to the Screeps API.
+ * Fetch world status (normal/lost/empty).
+ * Endpoint: GET /api/user/world-status
+ */
+export async function fetchWorldStatus(
+    opts: ScreepsApiOptions
+): Promise<WorldStatusResponse | null> {
+    const url = new URL("/api/user/world-status", opts.baseUrl);
+    return fetchScreeps<WorldStatusResponse>(url, opts.token);
+}
+
+/**
+ * Fetch the current game tick.
+ * Endpoint: GET /api/game/time
+ */
+export async function fetchGameTime(
+    opts: ScreepsApiOptions
+): Promise<number | null> {
+    const url = new URL("/api/game/time", opts.baseUrl);
+    const result = await fetchScreeps<GameTimeResponse>(url, opts.token);
+    return result?.ok === 1 ? result.time : null;
+}
+
+// ─── Internal Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Make an authenticated GET request to the Screeps API.
  */
 async function fetchScreeps<T>(url: URL, token: string): Promise<T | null> {
     try {

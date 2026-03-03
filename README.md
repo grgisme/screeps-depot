@@ -1,90 +1,137 @@
 # ScreepsDepot 🚂
 
 ![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)
+![Node](https://img.shields.io/badge/Node-%E2%89%A522-green.svg)
 ![Deployment](https://img.shields.io/badge/Deploy-Railway-black.svg)
 ![Status](https://img.shields.io/badge/Status-In_Development-yellow.svg)
 
-**ScreepsDepot** is a centralized, multi-tenant telemetry and log storage hub for your Screeps AI. It acts as a data warehousing backend, going beyond standard in-game memory limits by offloading your stats, logs, and metrics to a secure external depot.
+**ScreepsDepot** is a centralized, multi-tenant telemetry and observability hub for your Screeps AI. It goes beyond standard in-game memory limits by offloading your stats, logs, and flight recorder events to a secure external depot with a real-time dashboard.
 
-Whether you're running code on the MMO World, competing in the latest Season, or testing on a Private Server, ScreepsDepot keeps all your telemetry organized, searchable, and ready for visualization.
+Whether you're running code on the MMO World, competing in the latest Season, or testing on a Private Server, ScreepsDepot keeps all your telemetry organized, searchable, and visualized in one place.
 
 ---
 
 ## ✨ Features
 
-* **Multi-Tenant Architecture:** Secure login and user management allowing multiple players/users to isolate and manage their own data independently.
-* **Grafana-Ready Telemetry:** Automatically parses and structures your game stats (room energy, creep counts, GCL, CPU usage, etc.) making it a robust, plug-and-play data source for Grafana dashboards.
-* **Persistent Log Archiving:** Captures your in-game console logs and stores them indefinitely. Stop losing historical debugging data to the terminal scroll limit.
-* **Omni-Server Context:** Manage multiple Screeps environments under one roof. Easily tag and filter data between Screeps World, Screeps Seasons, and custom Private Servers.
-* **Dual-Mode Ingestion:** * **Pull Mode:** Provide your Screeps API Token/Credentials, and the Depot will automatically scrape your stats on a scheduled interval.
-    * **Push Mode:** Use the Depot's ingestion API to `POST` telemetry and logs directly from an in-game agent or external script.
+* **Multi-Tenant Architecture:** Secure user registration and login with JWT authentication. Each player manages their own data in full isolation.
+* **Real-Time Observability Dashboard:** A tabbed React SPA with views for:
+    * **Overview** — high-level colony health at a glance
+    * **Performance** — per-tick CPU, GCL, energy, and creep stats (Recharts)
+    * **Flight Recorder** — structured event logs from in-game FlightRecorder (segments 98/99)
+    * **Rooms** — room-level telemetry
+    * **Market** — market activity data
+    * **System Logs** — console log archive with severity filtering
+* **Per-Tick Stats Ingestion:** Parses segment 97 (StatsExporter) data into structured, queryable time-series records.
+* **Persistent Log Archiving:** Captures in-game console output and stores it indefinitely.
+* **Multi-Server Support:** Manage multiple Screeps environments (World, Seasons, Private Servers) under one account with per-server configuration.
+* **Dual-Mode Ingestion:**
+    * **Pull Mode:** Provide your Screeps API token, and the Depot automatically polls your memory segments and console on a configurable multi-cadence schedule.
+    * **Push Mode:** Use the Depot's ingestion API to `POST` telemetry and logs directly from an in-game agent.
+* **Grafana-Compatible:** JSON datasource endpoints for plugging directly into Grafana dashboards.
 
 ---
 
-## 🏗️ Architecture & Stack
+## 🏗️ Tech Stack
 
-* **Language:** Python (Powered by `antigravity`)
-* **Database:** PostgreSQL (Ideal for time-series data and relational user management)
-* **Deployment:** Designed to be easily hosted on [Railway.app](https://railway.app)
-* **Visualization:** Compatible with Grafana
+| Layer | Technology |
+|-------|------------|
+| Runtime | Node.js ≥22 (ESM) |
+| Server | TypeScript + Express 5 |
+| Client | React 19 + Vite + Tailwind CSS 4 + Recharts |
+| ORM / Database | Prisma 7 → PostgreSQL |
+| Auth | bcryptjs + jsonwebtoken (JWT) |
+| Background Jobs | node-cron (multi-cadence poller) |
+| Deployment | Railway.app |
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Local Development
+### Prerequisites
+* Node.js ≥22
+* PostgreSQL instance (local or hosted)
 
-Clone the repository and install the dependencies:
+### 1. Clone & Install
 
-```bash
-git clone [https://github.com/](https://github.com/)<your-username>/screepsdepot.git
-cd screepsdepot
-pip install -r requirements.txt
-```
-Set up your local .env file with your database credentials:
-
-```bash
-DATABASE_URL=postgres://user:password@localhost:5432/screepsdepot
-SECRET_KEY=your_super_secret_key
+```powershell
+git clone https://github.com/<your-username>/screeps-depot.git
+cd screeps-depot
+npm install
 ```
 
-Run the application.
+### 2. Configure Environment
 
-```bash
-# Add your specific run command here, e.g., uvicorn, gunicorn, python app.py
+Create a `.env` file in the repo root:
+
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/screepsdepot
+JWT_SECRET=your_super_secret_key
+PORT=3000
 ```
 
-### 2. Deploying to Railway
-ScreepsDepot is built for easy deployment on Railway:
+### 3. Set Up the Database
 
-Fork or clone this repository to your GitHub account.
-
-Create a new Project in Railway and select Deploy from GitHub repo.
-
-Add a PostgreSQL plugin to your Railway project.
-
-Ensure the DATABASE_URL environment variable is linked to your app service.
-
-Railway will automatically detect the Python environment and deploy!
-
-## 🔌 API Integration (Push Mode)
-More detailed API documentation coming soon.
-
-To push data directly from your Screeps AI, you will generate an API Key in the ScreepsDepot dashboard. You can then configure your in-game code to send a POST request to the ingestion endpoint:
-
-```javascript
-// Example Screeps Agent Push
-const DEPOT_URL = "[https://your-app-name.up.railway.app/api/v1/ingest](https://your-app-name.up.railway.app/api/v1/ingest)";
-const API_KEY = "your_depot_api_key";
-
-// ... collect stats ...
-
-Game.market.calcTransactionCost(...) // etc.
+```powershell
+npx prisma migrate dev
 ```
+
+### 4. Run in Development
+
+Start the server (with hot-reload):
+```powershell
+npm run dev
+```
+
+In a separate terminal, start the client dev server:
+```powershell
+cd client
+npm install
+npm run dev
+```
+
+### 5. Production Build
+
+```powershell
+npm run build
+npm start
+```
+
+This installs client dependencies, builds the React SPA, generates the Prisma client, and type-checks the server. `npm start` runs migrations and starts the Express server, which serves the built SPA from `client/dist/`.
+
+---
+
+## 🖥️ Deploying to Railway
+
+1. Fork or clone this repository to your GitHub account.
+2. Create a new Project in Railway and select **Deploy from GitHub repo**.
+3. Add a **PostgreSQL** plugin to your Railway project.
+4. Set the `DATABASE_URL` and `JWT_SECRET` environment variables on the app service.
+5. Railway will build and deploy automatically.
+
+---
+
+## 🔌 API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Health check |
+| `POST /api/auth/register` | Register a new user |
+| `POST /api/auth/login` | Login and receive JWT |
+| `GET/POST /api/servers` | CRUD for Screeps server configurations |
+| `POST /api/push/stats` | Push stats from in-game agent (token auth) |
+| `POST /api/push/logs` | Push logs from in-game agent (token auth) |
+| `GET /api/dashboard/*` | Dashboard data queries |
+| `GET /api/tick-stats/*` | Per-tick stats queries |
+| `GET /api/flight-recorder/*` | Flight recorder event queries |
+| `GET /api/grafana/*` | Grafana JSON datasource |
+
+---
+
 ## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues](../../issues) page.
 
 ## 📝 License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3) - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)** — see the [LICENSE](LICENSE) file for details.

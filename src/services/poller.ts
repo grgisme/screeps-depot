@@ -1,15 +1,19 @@
 import cron from "node-cron";
 import prisma from "../lib/prisma.js";
-import { fetchUserStats } from "./screepsApi.js";
+import {
+    fetchUserStats,
+    fetchMemorySegment,
+    fetchMemoryStats,
+} from "./screepsApi.js";
 
-const DEFAULT_CRON = "*/15 * * * *"; // Every 15 minutes
+const DEFAULT_CRON = "*/2 * * * *"; // Every 2 minutes
 
 /**
  * Start the background polling service.
  *
  * On each tick, queries all ScreepsServer entries where polling is enabled
  * and an API token is configured. For each server, fetches stats from the
- * Screeps Web API and saves the results to the Stat and Log tables.
+ * Screeps Web API and saves the results to the database.
  */
 export function startPoller(): void {
     const cronExpression = process.env.POLL_INTERVAL_CRON || DEFAULT_CRON;
@@ -66,7 +70,7 @@ export function startPoller(): void {
 }
 
 /**
- * Poll a single Screeps server: fetch user stats and save them.
+ * Poll a single Screeps server: fetch all available data.
  * Exported so it can be triggered on-demand from the API.
  */
 export async function pollServer(server: {
@@ -74,6 +78,7 @@ export async function pollServer(server: {
     name: string;
     apiToken: string | null;
     apiBaseUrl: string;
+    shard?: string;
 }): Promise<void> {
     if (!server.apiToken) return;
 
@@ -81,33 +86,242 @@ export async function pollServer(server: {
         baseUrl: server.apiBaseUrl,
         token: server.apiToken,
     };
+    const shard = server.shard || "shard3";
 
-    // ─── Fetch user stats (GCL, CPU, credits) ──────────────────────────────
-    const userStats = await fetchUserStats(opts);
+    // Run all ingestion tasks in parallel
+    const results = await Promise.allSettled([
+        pollUserStats(opts, server.id),
+        pollStatsSegment(opts, server.id, shard),
+        pollFlightRecorder(opts, server.id, shard, 98),
+        pollFlightRecorder(opts, server.id, shard, 99),
+    ]);
 
-    if (userStats && userStats.ok === 1) {
-        await prisma.stat.create({
-            data: {
-                data: {
-                    type: "userStats",
-                    username: userStats.username,
-                    gcl: userStats.gcl,
-                    cpu: userStats.cpu,
-                    credits: userStats.credits ?? 0,
-                },
-                serverId: server.id,
-            },
-        });
-
-        // Log successful poll
-        await prisma.log.create({
-            data: {
-                message: `Polled user stats: GCL=${userStats.gcl}, CPU=${userStats.cpu}`,
-                severity: "INFO",
-                serverId: server.id,
-            },
-        });
-    } else {
-        throw new Error(`Failed to fetch user stats from ${server.apiBaseUrl}`);
+    // Check if all tasks failed
+    const allFailed = results.every((r) => r.status === "rejected");
+    if (allFailed) {
+        throw new Error(`All polling tasks failed for ${server.apiBaseUrl}`);
     }
+
+    // Log individual failures
+    const taskNames = ["userStats", "segment97", "segment98", "segment99"];
+    for (let i = 0; i < results.length; i++) {
+        if (results[i].status === "rejected") {
+            const reason = (results[i] as PromiseRejectedResult).reason;
+            console.warn(
+                `📡 ⚠️ ${taskNames[i]} failed for "${server.name}": ${reason instanceof Error ? reason.message : String(reason)}`
+            );
+        }
+    }
+}
+
+// ─── User Stats (auth/me) ─────────────────────────────────────────────────────
+
+async function pollUserStats(
+    opts: { baseUrl: string; token: string },
+    serverId: string
+): Promise<void> {
+    const userStats = await fetchUserStats(opts);
+    if (!userStats || userStats.ok !== 1) {
+        throw new Error(`Failed to fetch user stats from ${opts.baseUrl}`);
+    }
+
+    await prisma.stat.create({
+        data: {
+            data: {
+                type: "userStats",
+                username: userStats.username,
+                gcl: userStats.gcl,
+                cpu: userStats.cpu,
+                credits: userStats.credits ?? 0,
+            },
+            serverId,
+        },
+    });
+}
+
+// ─── Stats Segment (97) + Legacy Memory.stats fallback ────────────────────────
+
+async function pollStatsSegment(
+    opts: { baseUrl: string; token: string },
+    serverId: string,
+    shard: string
+): Promise<void> {
+    // Try segment 97 first (preferred)
+    let rawSegment = await fetchMemorySegment(opts, 97, shard);
+
+    if (rawSegment && rawSegment.trim()) {
+        try {
+            const parsed = JSON.parse(rawSegment);
+            // Segment 97 contains a JSON array of up to 20 tick snapshots
+            const snapshots = Array.isArray(parsed) ? parsed : [parsed];
+            await ingestTickStats(snapshots, serverId, shard);
+            return;
+        } catch (err) {
+            console.warn(`📡 Segment 97 parse failed, trying Memory.stats fallback:`, err);
+        }
+    }
+
+    // Fallback: try Memory.stats (legacy mode, gz-encoded)
+    const memStats = await fetchMemoryStats(opts, shard);
+    if (memStats) {
+        await ingestTickStats([memStats], serverId, shard);
+    }
+}
+
+async function ingestTickStats(
+    snapshots: Record<string, unknown>[],
+    serverId: string,
+    shard: string
+): Promise<void> {
+    let ingested = 0;
+
+    for (const snapshot of snapshots) {
+        if (!snapshot || typeof snapshot !== "object") continue;
+
+        const tick = typeof snapshot.tick === "number"
+            ? snapshot.tick
+            : typeof snapshot.tick === "string"
+                ? parseInt(snapshot.tick, 10)
+                : 0;
+
+        if (!tick) continue;
+
+        try {
+            await prisma.tickStat.upsert({
+                where: {
+                    serverId_tick_shard: { serverId, tick, shard },
+                },
+                create: {
+                    tick,
+                    shard,
+                    data: snapshot as any,
+                    serverId,
+                },
+                update: {}, // Already exists, no-op
+            });
+            ingested++;
+        } catch (err) {
+            // Silently skip duplicates or constraint violations
+            console.warn(`📡 Skip tick ${tick}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
+
+    if (ingested > 0) {
+        console.log(`📡 Ingested ${ingested} tick stat(s) for shard ${shard}`);
+    }
+}
+
+// ─── FlightRecorder (Segments 98 & 99) ────────────────────────────────────────
+
+async function pollFlightRecorder(
+    opts: { baseUrl: string; token: string },
+    serverId: string,
+    shard: string,
+    segmentId: 98 | 99
+): Promise<void> {
+    let rawSegment = await fetchMemorySegment(opts, segmentId, shard);
+    if (!rawSegment || !rawSegment.trim()) return;
+
+    // Segment 99 may be base-65536 packed
+    if (segmentId === 99 && rawSegment.startsWith("P")) {
+        try {
+            rawSegment = decodeBase65536(rawSegment);
+        } catch (err) {
+            console.warn(`📡 Base-65536 decode failed for segment 99:`, err);
+            return;
+        }
+    }
+
+    let parsed: { head?: number; totalWrites?: number; entries?: unknown[] };
+    try {
+        parsed = JSON.parse(rawSegment);
+    } catch (err) {
+        console.warn(`📡 Segment ${segmentId} is not valid JSON`);
+        return;
+    }
+
+    if (!parsed.entries || !Array.isArray(parsed.entries)) return;
+
+    // Rebuild chronological order from circular buffer
+    const entries = parsed.entries;
+    const head = parsed.head ?? 0;
+    const ordered: unknown[] = [];
+
+    for (let i = 0; i < entries.length; i++) {
+        const idx = (head + i) % entries.length;
+        if (entries[idx] != null) {
+            ordered.push(entries[idx]);
+        }
+    }
+
+    let ingested = 0;
+    for (const entry of ordered) {
+        if (!entry || typeof entry !== "object") continue;
+        const e = entry as Record<string, unknown>;
+
+        const tick = typeof e.t === "number" ? e.t : 0;
+        const severity = typeof e.s === "string" ? e.s : "I";
+        const context = typeof e.c === "string" ? e.c : "unknown";
+        const message = typeof e.m === "string" ? e.m : "";
+
+        if (!tick || !message) continue;
+
+        try {
+            await prisma.flightRecorderEntry.upsert({
+                where: {
+                    serverId_tick_segment_context_message: {
+                        serverId,
+                        tick,
+                        segment: segmentId,
+                        context,
+                        message,
+                    },
+                },
+                create: {
+                    tick,
+                    severity,
+                    context,
+                    message,
+                    stackTrace: typeof e.st === "string" ? e.st : null,
+                    room: typeof e.r === "string" ? e.r : null,
+                    correlationId: typeof e.cid === "string" ? e.cid : null,
+                    segment: segmentId,
+                    serverId,
+                },
+                update: {}, // Already exists, no-op
+            });
+            ingested++;
+        } catch {
+            // Silently skip duplicates
+        }
+    }
+
+    if (ingested > 0) {
+        console.log(
+            `📡 Ingested ${ingested} flight recorder entry(s) from segment ${segmentId}`
+        );
+    }
+}
+
+/**
+ * Decode base-65536 packed data.
+ * Format: P<byteLength>:<packedChars>
+ * Each char in the packed portion encodes two bytes.
+ */
+function decodeBase65536(raw: string): string {
+    const colonIdx = raw.indexOf(":");
+    if (colonIdx === -1) throw new Error("Invalid base-65536 format: no colon");
+
+    const byteLength = parseInt(raw.slice(1, colonIdx), 10);
+    const packed = raw.slice(colonIdx + 1);
+    const bytes = new Uint8Array(byteLength);
+
+    for (let i = 0; i < packed.length; i++) {
+        const code = packed.charCodeAt(i);
+        const byteIdx = i * 2;
+        if (byteIdx < byteLength) bytes[byteIdx] = code >> 8;
+        if (byteIdx + 1 < byteLength) bytes[byteIdx + 1] = code & 0xff;
+    }
+
+    return new TextDecoder().decode(bytes);
 }

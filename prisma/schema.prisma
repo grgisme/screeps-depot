@@ -30,6 +30,7 @@ model ScreepsServer {
   apiToken       String?  // Screeps API token / key for this server
   pushToken      String   @unique @default(uuid()) // Static token for push endpoints
   apiBaseUrl     String   @default("https://screeps.com") // Base URL for the Screeps API
+  shard          String   @default("shard3") // Which shard to poll
   pollingEnabled Boolean  @default(false) // Whether background polling is enabled
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -37,10 +38,52 @@ model ScreepsServer {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  stats Stat[]
-  logs  Log[]
+  stats                 Stat[]
+  logs                  Log[]
+  tickStats             TickStat[]
+  flightRecorderEntries FlightRecorderEntry[]
 
   @@index([userId])
+}
+
+// ─── TickStat ────────────────────────────────────────────────────────────────
+// Per-tick stats snapshot from StatsExporter (segment 97 or Memory.stats).
+// Each row is one game tick, data is the full flat key-value snapshot.
+model TickStat {
+  id         String   @id @default(uuid())
+  tick       Int                        // Game tick number
+  shard      String   @default("shard3")
+  data       Json                       // Full flat key-value snapshot
+  recordedAt DateTime @default(now())
+
+  serverId String
+  server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, tick, shard])     // Prevent duplicate ingestion
+  @@index([serverId, recordedAt])
+}
+
+// ─── FlightRecorderEntry ─────────────────────────────────────────────────────
+// Events from the bot's FlightRecorder (segments 98 & 99).
+// Segment 98 = state transitions (INFO/WARN), segment 99 = errors/crashes.
+model FlightRecorderEntry {
+  id            String   @id @default(uuid())
+  tick          Int
+  severity      String                     // "I", "W", "E"
+  context       String                     // e.g. "Kernel", "ErrorMapper"
+  message       String
+  stackTrace    String?                    // Only for errors (segment 99)
+  room          String?                    // Optional room tag
+  correlationId String?                    // Optional cid
+  segment       Int                        // 98 or 99
+  recordedAt    DateTime @default(now())
+
+  serverId String
+  server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, tick, segment, context, message])  // Dedup
+  @@index([serverId, recordedAt])
+  @@index([severity])
 }
 
 // ─── Stat ────────────────────────────────────────────────────────────────────
