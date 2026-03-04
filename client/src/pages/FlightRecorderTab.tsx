@@ -116,7 +116,10 @@ export default function FlightRecorderTab({ serverId }: Props) {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-primary)", color: "var(--accent)" }}>{entry.context}</span>
                                                 {entry.room && <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>🏠 {entry.room}</span>}
-                                                <span className="text-xs font-mono ml-auto shrink-0" style={{ color: "var(--text-muted)" }}>T{entry.tick}</span>
+                                                <span className="text-xs font-mono ml-auto shrink-0" style={{ color: "var(--text-muted)" }}>
+                                                    {(() => { const d = new Date(entry.recordedAt); const mm = String(d.getMonth() + 1).padStart(2, "0"); const dd = String(d.getDate()).padStart(2, "0"); let h = d.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${mm}/${dd} ${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`; })()}
+                                                    {" · "}T{entry.tick}
+                                                </span>
                                             </div>
                                             <p className="text-sm mt-1 break-words" style={{ color: "var(--text-primary)" }}>{entry.message}</p>
                                         </div>
