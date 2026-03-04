@@ -110,7 +110,7 @@ export default function Dashboard() {
                     backdropFilter: "blur(12px)",
                 }}
             >
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div style={{ maxWidth: "1152px", marginLeft: "auto", marginRight: "auto", paddingLeft: "1.5rem", paddingRight: "1.5rem" }}>
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-4">
                             <h1
@@ -218,7 +218,7 @@ export default function Dashboard() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <main style={{ maxWidth: "1152px", marginLeft: "auto", marginRight: "auto", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "1.5rem", paddingBottom: "1.5rem" }}>
                 {isLoadingServers ? (
                     <div className="flex items-center justify-center py-20">
                         <div
