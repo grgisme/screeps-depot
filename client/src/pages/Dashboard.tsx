@@ -14,6 +14,7 @@ import PerformanceTab from "./PerformanceTab";
 import FlightRecorderTab from "./FlightRecorderTab";
 import MarketTab from "./MarketTab";
 import SystemLogsTab from "./SystemLogsTab";
+import EnergyTab from "./EnergyTab";
 
 export default function Dashboard() {
     const { token, logout } = useAuth();
@@ -83,6 +84,8 @@ export default function Dashboard() {
                 return <OverviewTab serverId={activeServerId} />;
             case "rooms":
                 return <RoomsTab serverId={activeServerId} />;
+            case "energy":
+                return <EnergyTab serverId={activeServerId} />;
             case "performance":
                 return <PerformanceTab serverId={activeServerId} />;
             case "flight-recorder":

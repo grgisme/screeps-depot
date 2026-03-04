@@ -311,3 +311,24 @@ export function getFlightRecorderSummary(token: string, serverId: string) {
         { token }
     );
 }
+
+// ─── Energy Stats ─────────────────────────────────────────────────────────────
+
+export interface EnergyResponse {
+    chartData: Record<string, unknown>[];
+    rooms: string[];
+    totalPoints: number;
+    from: string;
+    to: string;
+}
+
+export function getTickStatsEnergy(
+    token: string,
+    serverId: string,
+    hours: number = 24
+) {
+    return apiFetch<EnergyResponse>(
+        `/api/tick-stats/energy?serverId=${serverId}&hours=${hours}`,
+        { token }
+    );
+}

@@ -231,4 +231,81 @@ router.get("/processes", async (req: AuthRequest, res: Response) => {
     }
 });
 
+// ─── GET /api/tick-stats/energy?serverId=...&hours=24 ─────────────────────────
+// Returns per-room and empire-wide energy time-series.
+// Energy = energyAvailable + storageEnergy + terminalEnergy per room.
+router.get("/energy", async (req: AuthRequest, res: Response) => {
+    try {
+        const serverId = req.query.serverId as string;
+        const hours = parseInt((req.query.hours as string) || "24", 10);
+
+        if (!serverId) {
+            res.status(400).json({ error: "serverId is required" });
+            return;
+        }
+
+        const server = await prisma.screepsServer.findFirst({
+            where: { id: serverId, userId: req.userId! },
+        });
+        if (!server) {
+            res.status(404).json({ error: "Server not found" });
+            return;
+        }
+
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+        const tickStats = await prisma.tickStat.findMany({
+            where: { serverId, recordedAt: { gte: since } },
+            orderBy: { tick: "asc" },
+            take: 2000,
+        });
+
+        // Energy keys we sum per room
+        const ENERGY_KEYS = ["energyAvailable", "storageEnergy", "terminalEnergy"];
+
+        const roomNames = new Set<string>();
+        const chartData = tickStats.map((ts) => {
+            const data = ts.data as Record<string, unknown>;
+            const point: Record<string, unknown> = {
+                tick: ts.tick,
+                time: ts.recordedAt.toISOString(),
+            };
+
+            // Gather per-room energy totals
+            let empireTotal = 0;
+            const roomTotals: Record<string, number> = {};
+
+            for (const [key, val] of Object.entries(data)) {
+                if (!key.startsWith("rooms.") || typeof val !== "number") continue;
+                const parts = key.split(".");
+                if (parts.length < 3) continue;
+                const roomName = parts[1];
+                const metric = parts.slice(2).join(".");
+                if (!ENERGY_KEYS.includes(metric)) continue;
+
+                roomNames.add(roomName);
+                roomTotals[roomName] = (roomTotals[roomName] || 0) + val;
+            }
+
+            for (const [room, total] of Object.entries(roomTotals)) {
+                point[room] = total;
+                empireTotal += total;
+            }
+            point["empire"] = empireTotal;
+
+            return point;
+        });
+
+        res.json({
+            chartData,
+            rooms: Array.from(roomNames).sort(),
+            totalPoints: chartData.length,
+            from: since.toISOString(),
+            to: new Date().toISOString(),
+        });
+    } catch (err) {
+        console.error("tick-stats/energy error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

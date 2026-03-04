@@ -6,6 +6,7 @@ interface Props {
 const TABS = [
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "rooms", label: "Rooms", icon: "🏠" },
+    { id: "energy", label: "Energy", icon: "🔋" },
     { id: "performance", label: "Performance", icon: "⚡" },
     { id: "flight-recorder", label: "Flight Recorder", icon: "✈️" },
     { id: "market", label: "Market", icon: "💰" },
