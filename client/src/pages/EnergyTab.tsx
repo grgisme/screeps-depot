@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { getTickStatsEnergy, type EnergyResponse } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 
 interface Props {
     serverId: string;
@@ -69,6 +70,7 @@ export default function EnergyTab({ serverId }: Props) {
     useEffect(() => {
         load();
     }, [load]);
+    useAutoRefresh(load);
 
     // ── Latest empire energy for the KPI card ──
     const latestPoint = data?.chartData?.length

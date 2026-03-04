@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { getTickStatsRooms, type RoomsResponse } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 
@@ -25,6 +26,7 @@ export default function RoomsTab({ serverId }: Props) {
     }, [token, serverId]);
 
     useEffect(() => { load(); }, [load]);
+    useAutoRefresh(load);
 
     const rooms = data?.rooms ?? {};
     const roomNames = Object.keys(rooms).sort();

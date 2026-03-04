@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import {
     getFlightRecorderEntries,
     getFlightRecorderSummary,
@@ -44,6 +45,7 @@ export default function FlightRecorderTab({ serverId }: Props) {
     }, [token, serverId, severity, page]);
 
     useEffect(() => { load(); }, [load]);
+    useAutoRefresh(load);
 
     return (
         <div className="space-y-4">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import {
     ResponsiveContainer,
     LineChart,
@@ -62,6 +63,7 @@ export default function OverviewTab({ serverId }: Props) {
     }, [token, serverId, hours]);
 
     useEffect(() => { load(); }, [load]);
+    useAutoRefresh(load);
 
     const data = latest?.data ?? {};
     const kpis: KPI[] = [

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { getServerLogs, type Log } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 
@@ -32,6 +33,7 @@ export default function SystemLogsTab({ serverId }: Props) {
     }, [token, serverId, severity]);
 
     useEffect(() => { load(); }, [load]);
+    useAutoRefresh(load);
 
     return (
         <div className="space-y-4">

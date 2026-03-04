@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import {
     ResponsiveContainer,
     BarChart,
@@ -51,6 +52,7 @@ export default function PerformanceTab({ serverId }: Props) {
     }, [token, serverId, hours]);
 
     useEffect(() => { load(); }, [load]);
+    useAutoRefresh(load);
 
     const data = latest?.data ?? {};
 
