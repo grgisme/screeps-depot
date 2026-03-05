@@ -207,33 +207,86 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                     </div>
 
                     {isEdit && server && (
-                        <div className="pt-4 mt-4" style={{ borderTop: "1px solid var(--border)" }}>
-                            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-                                Push Token
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    readOnly
-                                    value={server.pushToken}
-                                    className="w-full rounded-lg px-4 py-2 text-sm outline-none opacity-80"
-                                    style={{
-                                        backgroundColor: "var(--bg-input)",
-                                        border: "1px solid var(--border)",
-                                        color: "var(--text-muted)",
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleRegenerate}
-                                    disabled={isSaving}
-                                    className="px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors"
-                                    style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
-                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
-                                >
-                                    Regenerate
-                                </button>
+                        <div className="pt-4 mt-4 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
+                            <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                                🔌 API / MCP Access
+                            </p>
+
+                            {/* Server ID */}
+                            <div>
+                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                                    Server ID
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={server.id}
+                                        className="w-full rounded-lg px-3 py-1.5 text-xs font-mono outline-none"
+                                        style={{
+                                            backgroundColor: "var(--bg-input)",
+                                            border: "1px solid var(--border)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => { navigator.clipboard.writeText(server.id); }}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
+                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        title="Copy Server ID"
+                                    >
+                                        📋
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Push Token / API Key */}
+                            <div>
+                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                                    API Key <span style={{ color: "var(--text-muted)" }}>(Push Token)</span>
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={server.pushToken}
+                                        className="w-full rounded-lg px-3 py-1.5 text-xs font-mono outline-none"
+                                        style={{
+                                            backgroundColor: "var(--bg-input)",
+                                            border: "1px solid var(--border)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => { navigator.clipboard.writeText(server.pushToken); }}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
+                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        title="Copy API Key"
+                                    >
+                                        📋
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleRegenerate}
+                                        disabled={isSaving}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
+                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--warning)" }}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        title="Regenerate API Key"
+                                    >
+                                        🔄
+                                    </button>
+                                </div>
+                                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                                    Use as <code style={{ color: "var(--accent)" }}>X-API-Key</code> header or <code style={{ color: "var(--accent)" }}>X-Push-Token</code> header.
+                                </p>
                             </div>
                         </div>
                     )}
