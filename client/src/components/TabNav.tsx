@@ -8,6 +8,7 @@ const TABS = [
     { id: "rooms", label: "Rooms", icon: "🏠" },
     { id: "energy", label: "Energy", icon: "🔋" },
     { id: "performance", label: "Performance", icon: "⚡" },
+    { id: "console-output", label: "Console Output", icon: "🖥️" },
     { id: "flight-recorder", label: "Flight Recorder", icon: "✈️" },
     { id: "market", label: "Market", icon: "💰" },
     { id: "system-logs", label: "System Logs", icon: "📋" },

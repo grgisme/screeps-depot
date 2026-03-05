@@ -14,6 +14,7 @@ import grafanaRoutes from "./routes/grafana.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import tickStatsRoutes from "./routes/tickStats.js";
 import flightRecorderRoutes from "./routes/flightRecorder.js";
+import consoleOutputRoutes from "./routes/consoleOutput.js";
 import { startPoller } from "./services/poller.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,6 +35,7 @@ app.use("/api/grafana", grafanaRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/tick-stats", tickStatsRoutes);
 app.use("/api/flight-recorder", flightRecorderRoutes);
+app.use("/api/console-output", consoleOutputRoutes);
 
 app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

@@ -5,16 +5,15 @@ import prisma from "../lib/prisma.js";
 const router = Router();
 router.use(authenticate);
 
-// ─── GET /api/flight-recorder?serverId=...&severity=E&page=1&limit=50 ────────
-// Paginated, filterable event log from FlightRecorder segments.
+// ─── GET /api/console-output?serverId=...&severity=I&page=1&limit=100 ────────
+// Paginated, filterable debug log from segment 96.
 router.get("/", async (req: AuthRequest, res: Response) => {
     try {
         const serverId = req.query.serverId as string;
         const severity = req.query.severity as string | undefined;
         const context = req.query.context as string | undefined;
-        const room = req.query.room as string | undefined;
         const page = parseInt((req.query.page as string) || "1", 10);
-        const limit = Math.min(parseInt((req.query.limit as string) || "50", 10), 200);
+        const limit = Math.min(parseInt((req.query.limit as string) || "100", 10), 500);
 
         if (!serverId) {
             res.status(400).json({ error: "serverId is required" });
@@ -29,10 +28,9 @@ router.get("/", async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const where: Record<string, unknown> = { serverId, segment: { in: [98, 99] } };
+        const where: Record<string, unknown> = { serverId, segment: 96 };
         if (severity) where.severity = severity;
         if (context) where.context = { contains: context };
-        if (room) where.room = room;
 
         const [entries, total] = await Promise.all([
             prisma.flightRecorderEntry.findMany({
@@ -51,10 +49,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
                 severity: e.severity,
                 context: e.context,
                 message: e.message,
-                stackTrace: e.stackTrace,
                 room: e.room,
-                correlationId: e.correlationId,
-                segment: e.segment,
                 recordedAt: e.recordedAt.toISOString(),
             })),
             pagination: {
@@ -65,13 +60,13 @@ router.get("/", async (req: AuthRequest, res: Response) => {
             },
         });
     } catch (err) {
-        console.error("flight-recorder error:", err);
+        console.error("console-output error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 });
 
-// ─── GET /api/flight-recorder/summary?serverId=... ───────────────────────────
-// Counts by severity (last hour and last 24 hours).
+// ─── GET /api/console-output/summary?serverId=... ────────────────────────────
+// Counts by severity (last hour and last 24 hours) for segment 96.
 router.get("/summary", async (req: AuthRequest, res: Response) => {
     try {
         const serverId = req.query.serverId as string;
@@ -94,18 +89,18 @@ router.get("/summary", async (req: AuthRequest, res: Response) => {
         const [hourCounts, dayCounts] = await Promise.all([
             prisma.flightRecorderEntry.groupBy({
                 by: ["severity"],
-                where: { serverId, segment: { in: [98, 99] }, recordedAt: { gte: oneHourAgo } },
+                where: { serverId, segment: 96, recordedAt: { gte: oneHourAgo } },
                 _count: true,
             }),
             prisma.flightRecorderEntry.groupBy({
                 by: ["severity"],
-                where: { serverId, segment: { in: [98, 99] }, recordedAt: { gte: oneDayAgo } },
+                where: { serverId, segment: 96, recordedAt: { gte: oneDayAgo } },
                 _count: true,
             }),
         ]);
 
         const toMap = (arr: { severity: string; _count: number }[]) => {
-            const map: Record<string, number> = { I: 0, W: 0, E: 0 };
+            const map: Record<string, number> = { T: 0, D: 0, I: 0, W: 0, E: 0 };
             for (const item of arr) map[item.severity] = item._count;
             return map;
         };
@@ -115,7 +110,7 @@ router.get("/summary", async (req: AuthRequest, res: Response) => {
             lastDay: toMap(dayCounts),
         });
     } catch (err) {
-        console.error("flight-recorder/summary error:", err);
+        console.error("console-output/summary error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 });

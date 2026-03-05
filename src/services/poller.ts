@@ -89,10 +89,11 @@ export async function pollServer(server: {
     const shard = server.shard || "shard3";
 
     // Run all ingestion tasks in parallel
-    const taskNames = ["userStats", "segment97", "segment98", "segment99"];
+    const taskNames = ["userStats", "segment97", "segment96", "segment98", "segment99"];
     const results = await Promise.allSettled([
         pollUserStats(opts, server.id),
         pollStatsSegment(opts, server.id, shard),
+        pollFlightRecorder(opts, server.id, shard, 96),
         pollFlightRecorder(opts, server.id, shard, 98),
         pollFlightRecorder(opts, server.id, shard, 99),
     ]);
@@ -243,7 +244,7 @@ async function pollFlightRecorder(
     opts: { baseUrl: string; token: string },
     serverId: string,
     shard: string,
-    segmentId: 98 | 99
+    segmentId: 96 | 98 | 99
 ): Promise<void> {
     let rawSegment = await fetchMemorySegment(opts, segmentId, shard);
     if (!rawSegment || !rawSegment.trim()) {

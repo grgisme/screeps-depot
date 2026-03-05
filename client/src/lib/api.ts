@@ -332,3 +332,53 @@ export function getTickStatsEnergy(
         { token }
     );
 }
+
+// ─── Console Output (Segment 96) ──────────────────────────────────────────────
+
+export interface ConsoleOutputEntry {
+    id: string;
+    tick: number;
+    severity: string;
+    context: string;
+    message: string;
+    room: string | null;
+    recordedAt: string;
+}
+
+export interface ConsoleOutputResponse {
+    entries: ConsoleOutputEntry[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
+export interface ConsoleOutputSummary {
+    lastHour: Record<string, number>;
+    lastDay: Record<string, number>;
+}
+
+export function getConsoleOutputEntries(
+    token: string,
+    serverId: string,
+    opts: { severity?: string; context?: string; page?: number; limit?: number } = {}
+) {
+    const params = new URLSearchParams({ serverId });
+    if (opts.severity) params.set("severity", opts.severity);
+    if (opts.context) params.set("context", opts.context);
+    if (opts.page) params.set("page", String(opts.page));
+    if (opts.limit) params.set("limit", String(opts.limit));
+    return apiFetch<ConsoleOutputResponse>(
+        `/api/console-output?${params.toString()}`,
+        { token }
+    );
+}
+
+export function getConsoleOutputSummary(token: string, serverId: string) {
+    return apiFetch<ConsoleOutputSummary>(
+        `/api/console-output/summary?serverId=${serverId}`,
+        { token }
+    );
+}
