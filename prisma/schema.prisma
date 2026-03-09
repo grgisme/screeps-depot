@@ -50,7 +50,7 @@ model ScreepsServer {
 // Per-tick stats snapshot from StatsExporter (segment 97 or Memory.stats).
 // Each row is one game tick, data is the full flat key-value snapshot.
 model TickStat {
-  id         String   @id @default(uuid())
+  id         Int      @id @default(autoincrement())
   tick       Int                        // Game tick number
   shard      String   @default("shard3")
   data       Json                       // Full flat key-value snapshot
@@ -64,10 +64,10 @@ model TickStat {
 }
 
 // ─── FlightRecorderEntry ─────────────────────────────────────────────────────
-// Events from the bot's FlightRecorder (segments 98 & 99).
-// Segment 98 = state transitions (INFO/WARN), segment 99 = errors/crashes.
+// Events from the bot's FlightRecorder & console output.
+// Segment 96 = console debug output, 98 = state transitions, 99 = errors.
 model FlightRecorderEntry {
-  id            String   @id @default(uuid())
+  id            Int      @id @default(autoincrement())
   tick          Int
   severity      String                     // "I", "W", "E"
   context       String                     // e.g. "Kernel", "ErrorMapper"
@@ -75,21 +75,22 @@ model FlightRecorderEntry {
   stackTrace    String?                    // Only for errors (segment 99)
   room          String?                    // Optional room tag
   correlationId String?                    // Optional cid
-  segment       Int                        // 98 or 99
+  segment       Int                        // 96, 98, or 99
+  dedupHash     String   @unique          // MD5(serverId|tick|segment|context|message)
   recordedAt    DateTime @default(now())
 
   serverId String
   server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  @@unique([serverId, tick, segment, context, message])  // Dedup
   @@index([serverId, recordedAt])
   @@index([severity])
+  @@index([segment])                       // For tiered retention queries
 }
 
 // ─── Stat ────────────────────────────────────────────────────────────────────
 // Time-series data stored as JSON, linked to a specific server.
 model Stat {
-  id         String   @id @default(uuid())
+  id         Int      @id @default(autoincrement())
   data       Json     // Arbitrary time-series payload
   recordedAt DateTime @default(now())
 
@@ -110,7 +111,7 @@ enum Severity {
 // ─── Log ─────────────────────────────────────────────────────────────────────
 // Log entries with timestamp, message, and severity, linked to a server.
 model Log {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   message   String
   severity  Severity @default(INFO)
   timestamp DateTime @default(now())

@@ -1,4 +1,5 @@
 import cron from "node-cron";
+import crypto from "crypto";
 import prisma from "../lib/prisma.js";
 import {
     fetchUserStats,
@@ -151,15 +152,6 @@ async function pollUserStats(
             serverId,
         },
     });
-
-    // Log successful poll
-    await prisma.log.create({
-        data: {
-            message: `Polled user stats: GCL=${userStats.gcl}, CPU=${userStats.cpu}`,
-            severity: "INFO",
-            serverId,
-        },
-    });
 }
 
 // ─── Stats Segment (97) + Legacy Memory.stats fallback ────────────────────────
@@ -214,6 +206,15 @@ async function ingestTickStats(
 
         if (!tick) continue;
 
+        // Strip ephemeral per-creep keys (e.g. "creeps.roles.defender-E16S13-72856951")
+        // These change every tick and bloat storage without analytical value.
+        const cleaned: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(snapshot)) {
+            if (!key.startsWith("creeps.roles.")) {
+                cleaned[key] = value;
+            }
+        }
+
         try {
             await prisma.tickStat.upsert({
                 where: {
@@ -222,7 +223,7 @@ async function ingestTickStats(
                 create: {
                     tick,
                     shard,
-                    data: snapshot as any,
+                    data: cleaned as any,
                     serverId,
                 },
                 update: {}, // Already exists, no-op
@@ -299,17 +300,15 @@ async function pollFlightRecorder(
 
         if (!tick || !message) continue;
 
+        // Compute dedup hash: MD5(serverId|tick|segment|context|message)
+        const dedupHash = crypto
+            .createHash("md5")
+            .update(`${serverId}|${tick}|${segmentId}|${context}|${message}`)
+            .digest("hex");
+
         try {
             await prisma.flightRecorderEntry.upsert({
-                where: {
-                    serverId_tick_segment_context_message: {
-                        serverId,
-                        tick,
-                        segment: segmentId,
-                        context,
-                        message,
-                    },
-                },
+                where: { dedupHash },
                 create: {
                     tick,
                     severity,
@@ -319,6 +318,7 @@ async function pollFlightRecorder(
                     room: typeof e.r === "string" ? e.r : null,
                     correlationId: typeof e.cid === "string" ? e.cid : null,
                     segment: segmentId,
+                    dedupHash,
                     serverId,
                 },
                 update: {}, // Already exists, no-op

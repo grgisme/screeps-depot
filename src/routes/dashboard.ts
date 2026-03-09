@@ -188,7 +188,11 @@ router.post("/retention/run", async (_req: AuthRequest, res: Response) => {
             process.env.DATA_RETENTION_HOURS || "48",
             10
         );
-        const result = await pruneOldData(retentionHours);
+        const consoleRetentionHours = parseInt(
+            process.env.CONSOLE_RETENTION_HOURS || "6",
+            10
+        );
+        const result = await pruneOldData(retentionHours, consoleRetentionHours);
         res.json(result);
     } catch (err) {
         console.error("Retention run error:", err);
@@ -205,7 +209,11 @@ router.get("/retention/stats", async (_req: AuthRequest, res: Response) => {
             process.env.DATA_RETENTION_HOURS || "48",
             10
         );
-        res.json({ counts, retentionHours });
+        const consoleRetentionHours = parseInt(
+            process.env.CONSOLE_RETENTION_HOURS || "6",
+            10
+        );
+        res.json({ counts, retentionHours, consoleRetentionHours });
     } catch (err) {
         console.error("Retention stats error:", err);
         res.status(500).json({ error: "Failed to get table counts" });
