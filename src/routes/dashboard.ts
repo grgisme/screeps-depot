@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { pruneOldData, getTableCounts } from "../services/retention.js";
 
 const router = Router();
 
@@ -176,6 +177,38 @@ router.get("/logs", async (req: AuthRequest, res: Response) => {
     } catch (err) {
         console.error("Dashboard logs error:", err);
         res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── POST /api/dashboard/retention/run ────────────────────────────────────────
+// Manually trigger a retention pass. Useful when the DB is close to capacity.
+router.post("/retention/run", async (_req: AuthRequest, res: Response) => {
+    try {
+        const retentionHours = parseInt(
+            process.env.DATA_RETENTION_HOURS || "48",
+            10
+        );
+        const result = await pruneOldData(retentionHours);
+        res.json(result);
+    } catch (err) {
+        console.error("Retention run error:", err);
+        res.status(500).json({ error: "Retention pass failed", detail: String(err) });
+    }
+});
+
+// ─── GET /api/dashboard/retention/stats ───────────────────────────────────────
+// Returns current row counts for all time-series tables.
+router.get("/retention/stats", async (_req: AuthRequest, res: Response) => {
+    try {
+        const counts = await getTableCounts();
+        const retentionHours = parseInt(
+            process.env.DATA_RETENTION_HOURS || "48",
+            10
+        );
+        res.json({ counts, retentionHours });
+    } catch (err) {
+        console.error("Retention stats error:", err);
+        res.status(500).json({ error: "Failed to get table counts" });
     }
 });
 

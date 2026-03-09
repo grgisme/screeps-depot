@@ -16,6 +16,7 @@ import tickStatsRoutes from "./routes/tickStats.js";
 import flightRecorderRoutes from "./routes/flightRecorder.js";
 import consoleOutputRoutes from "./routes/consoleOutput.js";
 import { startPoller } from "./services/poller.js";
+import { startRetentionCron } from "./services/retention.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,6 +74,9 @@ app.listen(PORT, () => {
 
     // Start the background polling service
     startPoller();
+
+    // Start the data retention cron (prunes old data hourly)
+    startRetentionCron();
 });
 
 export default app;
