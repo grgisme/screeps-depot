@@ -131,6 +131,33 @@ body {
   .text-glow {
     text-shadow: 0 0 20px var(--accent-glow);
   }
+
+  /* Sidebar navigation items */
+  .sidebar-item {
+    position: relative;
+    letter-spacing: 0.01em;
+  }
+
+  .sidebar-item-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ─── Scrollbar ────────────────────────────────────────────────────────────── */
