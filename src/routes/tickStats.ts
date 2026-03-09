@@ -36,22 +36,28 @@ router.get("/", async (req: AuthRequest, res: Response) => {
             take: 2000,
         });
 
-        // All numeric metric column names
-        const allMetricNames = [
-            "cpuUsed", "cpuLimit", "cpuBucket", "cpuTickLimit",
-            "gclLevel", "gclProgress", "gclProgressTotal",
-            "gplLevel", "gplProgress", "gplProgressTotal",
-            "heapUsed", "heapLimit", "heapRatio",
-            "marketCredits", "marketActiveOrders",
-            "creepsMy", "creepsHostile",
-            "spawnsTotal", "spawnsActive", "spawnsUtilization",
-            "defenseTowerCount", "defenseTowerEnergy", "defenseRampartCount", "defenseRampartMinHits",
-            "errorMapperTotalErrors", "errorMapperCpuUsed",
-            "cacheSize", "cacheDirtyCount", "cacheCommitCPU",
-        ];
+        // Map between dot-notation (frontend) and camelCase (DB columns)
+        const dotToCamel: Record<string, string> = {
+            "cpu.used": "cpuUsed", "cpu.limit": "cpuLimit", "cpu.bucket": "cpuBucket", "cpu.tickLimit": "cpuTickLimit",
+            "gcl.level": "gclLevel", "gcl.progress": "gclProgress", "gcl.progressTotal": "gclProgressTotal",
+            "gpl.level": "gplLevel", "gpl.progress": "gplProgress", "gpl.progressTotal": "gplProgressTotal",
+            "heap.used": "heapUsed", "heap.limit": "heapLimit", "heap.ratio": "heapRatio",
+            "market.credits": "marketCredits", "market.activeOrders": "marketActiveOrders",
+            "creeps.my": "creepsMy", "creeps.hostile": "creepsHostile",
+            "spawns.total": "spawnsTotal", "spawns.active": "spawnsActive", "spawns.utilization": "spawnsUtilization",
+            "defense.towerCount": "defenseTowerCount", "defense.towerEnergy": "defenseTowerEnergy",
+            "defense.rampartCount": "defenseRampartCount", "defense.rampartMinHits": "defenseRampartMinHits",
+            "errorMapper.totalErrors": "errorMapperTotalErrors", "errorMapper.cpuUsed": "errorMapperCpuUsed",
+            "cache.size": "cacheSize", "cache.dirtyCount": "cacheDirtyCount", "cache.commitCPU": "cacheCommitCPU",
+        };
+        const camelToDot = Object.fromEntries(Object.entries(dotToCamel).map(([d, c]) => [c, d]));
 
-        const selectedMetrics = metrics.length > 0
-            ? metrics.filter((m) => allMetricNames.includes(m))
+        // All valid camelCase column names
+        const allMetricNames = Object.values(dotToCamel);
+
+        // Accept either dot-notation or camelCase from the frontend
+        const resolvedMetrics = metrics.length > 0
+            ? metrics.map((m) => dotToCamel[m] || m).filter((m) => allMetricNames.includes(m))
             : allMetricNames;
 
         const chartData = snapshots.map((s) => {
@@ -59,10 +65,11 @@ router.get("/", async (req: AuthRequest, res: Response) => {
                 tick: s.tick,
                 time: s.recordedAt.toISOString(),
             };
-            for (const m of selectedMetrics) {
+            for (const m of resolvedMetrics) {
                 const val = (s as Record<string, unknown>)[m];
-                // Convert BigInt to Number for JSON serialization
-                point[m] = typeof val === "bigint" ? Number(val) : val;
+                // Return dot-notation key (matching frontend dataKey props)
+                const dotKey = camelToDot[m] || m;
+                point[dotKey] = typeof val === "bigint" ? Number(val) : val;
             }
             return point;
         });
