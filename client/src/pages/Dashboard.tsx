@@ -16,9 +16,11 @@ import MarketTab from "./MarketTab";
 import SystemLogsTab from "./SystemLogsTab";
 import EnergyTab from "./EnergyTab";
 import ConsoleOutputTab from "./ConsoleOutputTab";
+import { useTheme } from "../hooks/useTheme";
 
 export default function Dashboard() {
     const { token, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     const [servers, setServers] = useState<Server[]>([]);
     const [activeServerId, setActiveServerId] = useState<string | null>(null);
@@ -168,6 +170,14 @@ export default function Dashboard() {
                                     ⚙️ Settings
                                 </button>
                             )}
+                            <button
+                                onClick={toggleTheme}
+                                className="glass-panel-interactive rounded-lg px-3 py-1.5 text-sm font-medium cursor-pointer transition-all hover:text-[var(--text-primary)]"
+                                style={{ color: "var(--text-secondary)" }}
+                                title="Toggle Theme"
+                            >
+                                {theme === "light" ? "🌙" : "☀️"}
+                            </button>
                             <button
                                 id="logout-btn"
                                 onClick={logout}

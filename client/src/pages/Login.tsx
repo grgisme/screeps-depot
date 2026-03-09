@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 
 export default function Login() {
     const { login, register, error, clearError, isLoading } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [isRegister, setIsRegister] = useState(false);
@@ -22,6 +24,15 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+            <button
+                onClick={toggleTheme}
+                className="absolute top-6 right-6 z-50 glass-panel-interactive rounded-full w-12 h-12 flex items-center justify-center text-xl cursor-pointer transition-all hover:scale-110"
+                style={{ color: "var(--text-primary)" }}
+                title="Toggle Theme"
+            >
+                {theme === "light" ? "🌙" : "☀️"}
+            </button>
+
             {/* Ambient Background Glows */}
             <div className="absolute w-[600px] h-[600px] bg-[var(--accent)]/10 rounded-full blur-[120px] -top-32 -left-32 pointer-events-none mix-blend-screen"></div>
             <div className="absolute w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] bottom-0 right-0 pointer-events-none mix-blend-screen"></div>
