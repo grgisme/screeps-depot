@@ -161,7 +161,7 @@ router.get("/:id/stats", async (req: Request<{ id: string }>, res: Response) => 
             return;
         }
 
-        const stats = await prisma.stat.findMany({
+        const stats = await prisma.tickSnapshot.findMany({
             where: { serverId: id },
             orderBy: { recordedAt: "desc" },
             take: 50,

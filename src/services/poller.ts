@@ -130,28 +130,20 @@ export async function pollServer(server: {
 }
 
 // ─── User Stats (auth/me) ─────────────────────────────────────────────────────
+// Account-level data (GCL, CPU limit, credits) is now captured directly
+// in TickSnapshot from segment 97. We still fetch it for logging purposes.
 
 async function pollUserStats(
     opts: { baseUrl: string; token: string },
-    serverId: string
+    _serverId: string
 ): Promise<void> {
     const userStats = await fetchUserStats(opts);
     if (!userStats || userStats.ok !== 1) {
         throw new Error(`Failed to fetch user stats from ${opts.baseUrl}`);
     }
-
-    await prisma.stat.create({
-        data: {
-            data: {
-                type: "userStats",
-                username: userStats.username,
-                gcl: userStats.gcl,
-                cpu: userStats.cpu,
-                credits: userStats.credits ?? 0,
-            },
-            serverId,
-        },
-    });
+    // Data is captured by TickSnapshot (market.credits, gcl.*, cpu.limit)
+    // so we just log success here.
+    console.log(`📡 User stats OK: GCL=${userStats.gcl}, CPU=${userStats.cpu}`);
 }
 
 // ─── Stats Segment (97) + Legacy Memory.stats fallback ────────────────────────
@@ -188,6 +180,12 @@ async function pollStatsSegment(
     }
 }
 
+// Helper to safely extract a number from the flat snapshot
+function num(snapshot: Record<string, unknown>, key: string): number {
+    const v = snapshot[key];
+    return typeof v === "number" ? v : 0;
+}
+
 async function ingestTickStats(
     snapshots: Record<string, unknown>[],
     serverId: string,
@@ -206,31 +204,128 @@ async function ingestTickStats(
 
         if (!tick) continue;
 
-        // Strip ephemeral per-creep keys (e.g. "creeps.roles.defender-E16S13-72856951")
-        // These change every tick and bloat storage without analytical value.
-        const cleaned: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(snapshot)) {
-            if (!key.startsWith("creeps.roles.")) {
-                cleaned[key] = value;
+        // ── Extract per-room metrics ──
+        const roomsMap = new Map<string, Record<string, number>>();
+        // ── Extract per-process CPU ──
+        const processes: { processName: string; cpuUsed: number }[] = [];
+        // ── Extract per-role creep counts ──
+        const creepRoles: { roleName: string; count: number }[] = [];
+
+        for (const [key, val] of Object.entries(snapshot)) {
+            if (typeof val !== "number") continue;
+
+            if (key.startsWith("rooms.")) {
+                const parts = key.split(".");
+                if (parts.length >= 3) {
+                    const roomName = parts[1];
+                    const metric = parts.slice(2).join(".");
+                    if (!roomsMap.has(roomName)) roomsMap.set(roomName, {});
+                    roomsMap.get(roomName)![metric] = val;
+                }
+            } else if (key.startsWith("processes.")) {
+                processes.push({
+                    processName: key.replace("processes.", ""),
+                    cpuUsed: val,
+                });
+            } else if (key.startsWith("creeps.roles.")) {
+                creepRoles.push({
+                    roleName: key.replace("creeps.roles.", ""),
+                    count: Math.round(val),
+                });
             }
         }
 
+        // Build room snapshot creates
+        const roomCreates = Array.from(roomsMap.entries()).map(([roomName, metrics]) => ({
+            roomName,
+            energyAvailable: Math.round(metrics.energyAvailable ?? 0),
+            energyCapacity: Math.round(metrics.energyCapacity ?? 0),
+            controllerLevel: Math.round(metrics.controllerLevel ?? 0),
+            controllerProgress: BigInt(Math.round(metrics.controllerProgress ?? 0)),
+            controllerProgressTotal: BigInt(Math.round(metrics.controllerProgressTotal ?? 0)),
+            storageEnergy: Math.round(metrics.storageEnergy ?? 0),
+            terminalEnergy: Math.round(metrics.terminalEnergy ?? 0),
+            creepCount: Math.round(metrics.creepCount ?? 0),
+            hostileCount: Math.round(metrics.hostileCount ?? 0),
+        }));
+
         try {
-            await prisma.tickStat.upsert({
+            // Use upsert to handle dedup, with nested creates for child tables
+            await prisma.tickSnapshot.upsert({
                 where: {
                     serverId_tick_shard: { serverId, tick, shard },
                 },
                 create: {
                     tick,
                     shard,
-                    data: cleaned as any,
                     serverId,
+
+                    // CPU
+                    cpuUsed: num(snapshot, "cpu.used"),
+                    cpuLimit: Math.round(num(snapshot, "cpu.limit")),
+                    cpuBucket: Math.round(num(snapshot, "cpu.bucket")),
+                    cpuTickLimit: Math.round(num(snapshot, "cpu.tickLimit")),
+
+                    // GCL / GPL
+                    gclLevel: Math.round(num(snapshot, "gcl.level")),
+                    gclProgress: num(snapshot, "gcl.progress"),
+                    gclProgressTotal: num(snapshot, "gcl.progressTotal"),
+                    gplLevel: Math.round(num(snapshot, "gpl.level")),
+                    gplProgress: num(snapshot, "gpl.progress"),
+                    gplProgressTotal: num(snapshot, "gpl.progressTotal"),
+
+                    // Heap
+                    heapUsed: BigInt(Math.round(num(snapshot, "heap.used"))),
+                    heapLimit: BigInt(Math.round(num(snapshot, "heap.limit"))),
+                    heapRatio: num(snapshot, "heap.ratio"),
+
+                    // Market
+                    marketCredits: Math.round(num(snapshot, "market.credits")),
+                    marketActiveOrders: Math.round(num(snapshot, "market.activeOrders")),
+
+                    // Creeps
+                    creepsMy: Math.round(num(snapshot, "creeps.my")),
+                    creepsHostile: Math.round(num(snapshot, "creeps.hostile")),
+
+                    // Spawns
+                    spawnsTotal: Math.round(num(snapshot, "spawns.total")),
+                    spawnsActive: Math.round(num(snapshot, "spawns.active")),
+                    spawnsUtilization: num(snapshot, "spawns.utilization"),
+
+                    // Defense
+                    defenseTowerCount: Math.round(num(snapshot, "defense.towerCount")),
+                    defenseTowerEnergy: Math.round(num(snapshot, "defense.towerEnergy")),
+                    defenseRampartCount: Math.round(num(snapshot, "defense.rampartCount")),
+                    defenseRampartMinHits: BigInt(Math.round(num(snapshot, "defense.rampartMinHits"))),
+
+                    // ErrorMapper
+                    errorMapperTotalErrors: Math.round(num(snapshot, "errorMapper.totalErrors")),
+                    errorMapperMappedCount: Math.round(num(snapshot, "errorMapper.mappedCount")),
+                    errorMapperRawCount: Math.round(num(snapshot, "errorMapper.rawCount")),
+                    errorMapperCpuUsed: num(snapshot, "errorMapper.cpuUsed"),
+                    errorMapperUniqueFingerprints: Math.round(num(snapshot, "errorMapper.uniqueFingerprints")),
+                    errorMapperDeferredQueue: Math.round(num(snapshot, "errorMapper.deferredQueue")),
+                    errorMapperInResetLoop: Math.round(num(snapshot, "errorMapper.inResetLoop")),
+
+                    // Cache
+                    cacheSize: Math.round(num(snapshot, "cache.size")),
+                    cacheDirtyCount: Math.round(num(snapshot, "cache.dirtyCount")),
+                    cachePathCacheSize: Math.round(num(snapshot, "cache.pathCacheSize")),
+                    cacheHeapRatio: num(snapshot, "cache.heapRatio"),
+                    cacheEvictedThisTick: Math.round(num(snapshot, "cache.evictedThisTick")),
+                    cacheCommitCPU: num(snapshot, "cache.commitCPU"),
+                    cacheSchemaVersion: Math.round(num(snapshot, "cache.schemaVersion")),
+                    cacheBucketThrottled: Math.round(num(snapshot, "cache.bucketThrottled")),
+
+                    // Child tables
+                    roomSnapshots: { create: roomCreates },
+                    processSnapshots: { create: processes },
+                    creepRoles: { create: creepRoles },
                 },
                 update: {}, // Already exists, no-op
             });
             ingested++;
         } catch (err) {
-            // Silently skip duplicates or constraint violations
             console.warn(`📡 Skip tick ${tick}: ${err instanceof Error ? err.message : String(err)}`);
         }
     }

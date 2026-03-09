@@ -38,29 +38,134 @@ model ScreepsServer {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  stats                 Stat[]
+  stats                 TickSnapshot[]
   logs                  Log[]
-  tickStats             TickStat[]
   flightRecorderEntries FlightRecorderEntry[]
 
   @@index([userId])
 }
 
-// ─── TickStat ────────────────────────────────────────────────────────────────
+// ─── TickSnapshot ────────────────────────────────────────────────────────────
 // Per-tick stats snapshot from StatsExporter (segment 97 or Memory.stats).
-// Each row is one game tick, data is the full flat key-value snapshot.
-model TickStat {
+// Typed columns replace the old JSON blob approach for efficient storage and querying.
+model TickSnapshot {
   id         Int      @id @default(autoincrement())
-  tick       Int                        // Game tick number
+  tick       Int
   shard      String   @default("shard3")
-  data       Json                       // Full flat key-value snapshot
   recordedAt DateTime @default(now())
 
   serverId String
   server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  @@unique([serverId, tick, shard])     // Prevent duplicate ingestion
+  // ── CPU ──
+  cpuUsed      Float @default(0)
+  cpuLimit     Int   @default(0)
+  cpuBucket    Int   @default(0)
+  cpuTickLimit Int   @default(0)
+
+  // ── GCL / GPL ──
+  gclLevel         Int   @default(0)
+  gclProgress      Float @default(0)
+  gclProgressTotal Float @default(0)
+  gplLevel         Int   @default(0)
+  gplProgress      Float @default(0)
+  gplProgressTotal Float @default(0)
+
+  // ── Heap ──
+  heapUsed  BigInt @default(0)
+  heapLimit BigInt @default(0)
+  heapRatio Float  @default(0)
+
+  // ── Market ──
+  marketCredits      Int @default(0)
+  marketActiveOrders Int @default(0)
+
+  // ── Creeps ──
+  creepsMy      Int @default(0)
+  creepsHostile Int @default(0)
+
+  // ── Spawns ──
+  spawnsTotal       Int   @default(0)
+  spawnsActive      Int   @default(0)
+  spawnsUtilization Float @default(0)
+
+  // ── Defense ──
+  defenseTowerCount     Int    @default(0)
+  defenseTowerEnergy    Int    @default(0)
+  defenseRampartCount   Int    @default(0)
+  defenseRampartMinHits BigInt @default(0)
+
+  // ── ErrorMapper ──
+  errorMapperTotalErrors      Int   @default(0)
+  errorMapperMappedCount      Int   @default(0)
+  errorMapperRawCount         Int   @default(0)
+  errorMapperCpuUsed          Float @default(0)
+  errorMapperUniqueFingerprints Int  @default(0)
+  errorMapperDeferredQueue    Int   @default(0)
+  errorMapperInResetLoop      Int   @default(0)
+
+  // ── Cache ──
+  cacheSize            Int   @default(0)
+  cacheDirtyCount      Int   @default(0)
+  cachePathCacheSize   Int   @default(0)
+  cacheHeapRatio       Float @default(0)
+  cacheEvictedThisTick Int   @default(0)
+  cacheCommitCPU       Float @default(0)
+  cacheSchemaVersion   Int   @default(0)
+  cacheBucketThrottled Int   @default(0)
+
+  // ── Child tables ──
+  roomSnapshots    RoomSnapshot[]
+  processSnapshots ProcessSnapshot[]
+  creepRoles       CreepRoleSnapshot[]
+
+  @@unique([serverId, tick, shard])
   @@index([serverId, recordedAt])
+}
+
+// ─── RoomSnapshot ────────────────────────────────────────────────────────────
+// Per-room metrics for each tick snapshot.
+model RoomSnapshot {
+  id               Int          @id @default(autoincrement())
+  tickSnapshotId   Int
+  tickSnapshot     TickSnapshot @relation(fields: [tickSnapshotId], references: [id], onDelete: Cascade)
+  roomName         String       // e.g. "E17S13"
+
+  energyAvailable         Int    @default(0)
+  energyCapacity          Int    @default(0)
+  controllerLevel         Int    @default(0)
+  controllerProgress      BigInt @default(0)
+  controllerProgressTotal BigInt @default(0)
+  storageEnergy           Int    @default(0)
+  terminalEnergy          Int    @default(0)
+  creepCount              Int    @default(0)
+  hostileCount            Int    @default(0)
+
+  @@index([tickSnapshotId])
+}
+
+// ─── ProcessSnapshot ─────────────────────────────────────────────────────────
+// Per-process CPU usage for each tick snapshot.
+model ProcessSnapshot {
+  id             Int          @id @default(autoincrement())
+  tickSnapshotId Int
+  tickSnapshot   TickSnapshot @relation(fields: [tickSnapshotId], references: [id], onDelete: Cascade)
+  processName    String       // e.g. "Hatchery", "MiningSite"
+  cpuUsed        Float
+
+  @@index([tickSnapshotId])
+}
+
+// ─── CreepRoleSnapshot ───────────────────────────────────────────────────────
+// Per-role creep counts for each tick snapshot.
+model CreepRoleSnapshot {
+  id             Int          @id @default(autoincrement())
+  tickSnapshotId Int
+  tickSnapshot   TickSnapshot @relation(fields: [tickSnapshotId], references: [id], onDelete: Cascade)
+  roleName       String       // e.g. "harvester", "hauler"
+  count          Int
+
+  @@index([tickSnapshotId])
 }
 
 // ─── FlightRecorderEntry ─────────────────────────────────────────────────────
@@ -87,20 +192,6 @@ model FlightRecorderEntry {
   @@index([segment])                       // For tiered retention queries
 }
 
-// ─── Stat ────────────────────────────────────────────────────────────────────
-// Time-series data stored as JSON, linked to a specific server.
-model Stat {
-  id         Int      @id @default(autoincrement())
-  data       Json     // Arbitrary time-series payload
-  recordedAt DateTime @default(now())
-
-  serverId String
-  server   ScreepsServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
-
-  @@index([serverId])
-  @@index([recordedAt])
-}
-
 // ─── Severity Enum ───────────────────────────────────────────────────────────
 enum Severity {
   INFO
@@ -123,3 +214,4 @@ model Log {
   @@index([timestamp])
   @@index([severity])
 }
+

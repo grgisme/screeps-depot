@@ -8,28 +8,12 @@ const router = Router();
 router.use(pushAuthenticate);
 
 // ─── POST /api/push/stats ────────────────────────────────────────────────────
-// Accepts { data: {...} } and creates a Stat row linked to the server.
-router.post("/stats", async (req: PushAuthRequest, res: Response) => {
-    try {
-        const { data } = req.body;
-
-        if (!data || typeof data !== "object") {
-            res.status(400).json({ error: "Request body must include a 'data' object" });
-            return;
-        }
-
-        const stat = await prisma.stat.create({
-            data: {
-                data,
-                serverId: req.serverId!,
-            },
-        });
-
-        res.status(201).json({ id: stat.id, recordedAt: stat.recordedAt });
-    } catch (err) {
-        console.error("Push stats error:", err);
-        res.status(500).json({ error: "Internal server error" });
-    }
+// Stats are now ingested via the poller (segment 97 → TickSnapshot).
+// This endpoint is deprecated — push stats via segment 97 instead.
+router.post("/stats", async (_req: PushAuthRequest, res: Response) => {
+    res.status(410).json({
+        error: "Stats push is deprecated. Stats are now ingested automatically from segment 97 into typed TickSnapshot tables.",
+    });
 });
 
 // ─── POST /api/push/logs ─────────────────────────────────────────────────────

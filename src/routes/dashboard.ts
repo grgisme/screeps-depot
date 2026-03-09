@@ -5,19 +5,17 @@ import { pruneOldData, getTableCounts } from "../services/retention.js";
 
 const router = Router();
 
-// All dashboard routes require JWT authentication
+// All routes require authentication
 router.use(authenticate);
 
 // ─── GET /api/dashboard/stats?serverId=...&hours=24 ──────────────────────────
-// Returns historical stat data formatted for React charting libraries.
+// Returns time-series data for the dashboard overview charts.
+// Now queries typed TickSnapshot columns directly instead of parsing JSON.
 //
 // Response format:
 // {
-//   series: {
-//     cpu:     [{ time: "2026-02-25T18:00:00Z", value: 20 }, ...],
-//     gcl:     [{ time: "...", value: 5000000 }, ...],
-//     credits: [{ time: "...", value: 100 }, ...],
-//   },
+//   chartData: [{ time: "...", cpu: 1.8, gcl: 7624283, ... }, ...],
+//   series: { cpu: [{time, value}, ...], gcl: [{time, value}, ...] },
 //   availableMetrics: ["cpu", "gcl", "credits", ...],
 //   serverName: "TestWorld",
 //   from: "...",
@@ -33,7 +31,6 @@ router.get("/stats", async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        // Verify ownership
         const server = await prisma.screepsServer.findFirst({
             where: { id: serverId, userId: req.userId! },
         });
@@ -45,60 +42,33 @@ router.get("/stats", async (req: AuthRequest, res: Response) => {
         const from = new Date(Date.now() - hours * 60 * 60 * 1000);
         const to = new Date();
 
-        const stats = await prisma.stat.findMany({
+        const snapshots = await prisma.tickSnapshot.findMany({
             where: {
                 serverId,
                 recordedAt: { gte: from, lte: to },
             },
             orderBy: { recordedAt: "asc" },
-            take: 1000,
+            take: 500,
         });
 
-        // Discover all numeric keys across all stat entries
-        const allKeys = new Set<string>();
-        for (const stat of stats) {
-            const data = stat.data as Record<string, unknown>;
-            for (const [key, value] of Object.entries(data)) {
-                if (typeof value === "number") {
-                    allKeys.add(key);
-                }
-            }
-        }
+        // Dashboard historically showed these user-stats metrics from the old Stat table
+        const metricKeys = ["cpu", "gcl", "credits"];
 
-        // Exclude metadata keys that aren't useful for charting
-        const excludeKeys = new Set(["type"]);
-        const metricKeys = Array.from(allKeys).filter((k) => !excludeKeys.has(k));
+        // Map TickSnapshot columns to the old flat names
+        const chartData = snapshots.map((s) => ({
+            time: s.recordedAt.toISOString(),
+            cpu: s.cpuLimit,
+            gcl: s.gclProgress,
+            credits: s.marketCredits,
+        }));
 
-        // Build a time-aligned flat array for Recharts
-        // Each element: { time: "ISO string", cpu: 20, gcl: 5000000, ... }
-        const chartData = stats.map((stat) => {
-            const data = stat.data as Record<string, unknown>;
-            const point: Record<string, unknown> = {
-                time: stat.recordedAt.toISOString(),
-            };
-            for (const key of metricKeys) {
-                const val = data[key];
-                if (typeof val === "number") {
-                    point[key] = val;
-                }
-            }
-            return point;
-        });
-
-        // Also build per-metric series for flexibility
+        // Build series format (array of { time, value } per metric)
         const series: Record<string, { time: string; value: number }[]> = {};
         for (const key of metricKeys) {
-            series[key] = [];
-        }
-        for (const stat of stats) {
-            const data = stat.data as Record<string, unknown>;
-            const time = stat.recordedAt.toISOString();
-            for (const key of metricKeys) {
-                const val = data[key];
-                if (typeof val === "number") {
-                    series[key].push({ time, value: val });
-                }
-            }
+            series[key] = chartData.map((point) => ({
+                time: point.time,
+                value: (point as Record<string, unknown>)[key] as number,
+            }));
         }
 
         res.json({
@@ -108,7 +78,7 @@ router.get("/stats", async (req: AuthRequest, res: Response) => {
             serverName: server.name,
             from: from.toISOString(),
             to: to.toISOString(),
-            totalPoints: stats.length,
+            totalPoints: snapshots.length,
         });
     } catch (err) {
         console.error("Dashboard stats error:", err);
@@ -134,28 +104,17 @@ router.get("/logs", async (req: AuthRequest, res: Response) => {
         const search = req.query.search as string | undefined;
 
         if (!serverId) {
-            res.status(400).json({ error: "serverId query parameter is required" });
+            res.status(400).json({ error: "serverId is required" });
             return;
         }
 
-        // Verify ownership
-        const server = await prisma.screepsServer.findFirst({
-            where: { id: serverId, userId: req.userId! },
-        });
-        if (!server) {
-            res.status(404).json({ error: "Server not found" });
-            return;
-        }
+        const where: Record<string, unknown> = { serverId };
 
-        // Build where clause
-        const where: {
-            serverId: string;
-            severity?: "INFO" | "WARN" | "ERROR";
-            message?: { contains: string; mode: "insensitive" };
-        } = { serverId };
-
-        if (severity && ["INFO", "WARN", "ERROR"].includes(severity.toUpperCase())) {
-            where.severity = severity.toUpperCase() as "INFO" | "WARN" | "ERROR";
+        if (severity && severity.trim().length > 0) {
+            const upper = severity.toUpperCase();
+            if (["INFO", "WARN", "ERROR"].includes(upper)) {
+                where.severity = upper;
+            }
         }
 
         if (search && search.trim().length > 0) {

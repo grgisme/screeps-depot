@@ -5,8 +5,8 @@ import prisma from "../lib/prisma.js";
 const router = Router();
 router.use(authenticate);
 
-// ─── GET /api/tick-stats?serverId=...&hours=24 ────────────────────────────────
-// Returns time-series data for charts, extracting specific metrics from TickStat JSON.
+// ─── GET /api/tick-stats?serverId=...&hours=24&metrics=cpuUsed,cpuBucket ──────
+// Returns time-series data for charts using typed columns.
 router.get("/", async (req: AuthRequest, res: Response) => {
     try {
         const serverId = req.query.serverId as string;
@@ -27,7 +27,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
         }
 
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-        const tickStats = await prisma.tickStat.findMany({
+        const snapshots = await prisma.tickSnapshot.findMany({
             where: {
                 serverId,
                 recordedAt: { gte: since },
@@ -36,39 +36,40 @@ router.get("/", async (req: AuthRequest, res: Response) => {
             take: 2000,
         });
 
-        // Build chart-ready data: array of { tick, time, ...metricValues }
-        const chartData = tickStats.map((ts) => {
-            const data = ts.data as Record<string, unknown>;
-            const point: Record<string, unknown> = {
-                tick: ts.tick,
-                time: ts.recordedAt.toISOString(),
-            };
+        // All numeric metric column names
+        const allMetricNames = [
+            "cpuUsed", "cpuLimit", "cpuBucket", "cpuTickLimit",
+            "gclLevel", "gclProgress", "gclProgressTotal",
+            "gplLevel", "gplProgress", "gplProgressTotal",
+            "heapUsed", "heapLimit", "heapRatio",
+            "marketCredits", "marketActiveOrders",
+            "creepsMy", "creepsHostile",
+            "spawnsTotal", "spawnsActive", "spawnsUtilization",
+            "defenseTowerCount", "defenseTowerEnergy", "defenseRampartCount", "defenseRampartMinHits",
+            "errorMapperTotalErrors", "errorMapperCpuUsed",
+            "cacheSize", "cacheDirtyCount", "cacheCommitCPU",
+        ];
 
-            if (metrics.length > 0) {
-                for (const m of metrics) {
-                    if (data[m] !== undefined) point[m] = data[m];
-                }
-            } else {
-                // Return all numeric values
-                for (const [key, val] of Object.entries(data)) {
-                    if (typeof val === "number") point[key] = val;
-                }
+        const selectedMetrics = metrics.length > 0
+            ? metrics.filter((m) => allMetricNames.includes(m))
+            : allMetricNames;
+
+        const chartData = snapshots.map((s) => {
+            const point: Record<string, unknown> = {
+                tick: s.tick,
+                time: s.recordedAt.toISOString(),
+            };
+            for (const m of selectedMetrics) {
+                const val = (s as Record<string, unknown>)[m];
+                // Convert BigInt to Number for JSON serialization
+                point[m] = typeof val === "bigint" ? Number(val) : val;
             }
             return point;
         });
 
-        // Discover available metrics
-        const allKeys = new Set<string>();
-        for (const ts of tickStats) {
-            const data = ts.data as Record<string, unknown>;
-            for (const [key, val] of Object.entries(data)) {
-                if (typeof val === "number") allKeys.add(key);
-            }
-        }
-
         res.json({
             chartData,
-            availableMetrics: Array.from(allKeys).sort(),
+            availableMetrics: allMetricNames,
             totalPoints: chartData.length,
             serverName: server.name,
             from: since.toISOString(),
@@ -98,9 +99,14 @@ router.get("/latest", async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const latest = await prisma.tickStat.findFirst({
+        const latest = await prisma.tickSnapshot.findFirst({
             where: { serverId },
             orderBy: { tick: "desc" },
+            include: {
+                roomSnapshots: true,
+                processSnapshots: true,
+                creepRoles: true,
+            },
         });
 
         if (!latest) {
@@ -108,11 +114,79 @@ router.get("/latest", async (req: AuthRequest, res: Response) => {
             return;
         }
 
+        // Build a backward-compatible flat data object for the frontend
+        const data: Record<string, unknown> = {
+            tick: latest.tick,
+            shard: latest.shard,
+            "cpu.used": latest.cpuUsed,
+            "cpu.limit": latest.cpuLimit,
+            "cpu.bucket": latest.cpuBucket,
+            "cpu.tickLimit": latest.cpuTickLimit,
+            "gcl.level": latest.gclLevel,
+            "gcl.progress": latest.gclProgress,
+            "gcl.progressTotal": latest.gclProgressTotal,
+            "gpl.level": latest.gplLevel,
+            "gpl.progress": latest.gplProgress,
+            "gpl.progressTotal": latest.gplProgressTotal,
+            "heap.used": Number(latest.heapUsed),
+            "heap.limit": Number(latest.heapLimit),
+            "heap.ratio": latest.heapRatio,
+            "market.credits": latest.marketCredits,
+            "market.activeOrders": latest.marketActiveOrders,
+            "creeps.my": latest.creepsMy,
+            "creeps.hostile": latest.creepsHostile,
+            "spawns.total": latest.spawnsTotal,
+            "spawns.active": latest.spawnsActive,
+            "spawns.utilization": latest.spawnsUtilization,
+            "defense.towerCount": latest.defenseTowerCount,
+            "defense.towerEnergy": latest.defenseTowerEnergy,
+            "defense.rampartCount": latest.defenseRampartCount,
+            "defense.rampartMinHits": Number(latest.defenseRampartMinHits),
+            "errorMapper.totalErrors": latest.errorMapperTotalErrors,
+            "errorMapper.mappedCount": latest.errorMapperMappedCount,
+            "errorMapper.rawCount": latest.errorMapperRawCount,
+            "errorMapper.cpuUsed": latest.errorMapperCpuUsed,
+            "errorMapper.uniqueFingerprints": latest.errorMapperUniqueFingerprints,
+            "errorMapper.deferredQueue": latest.errorMapperDeferredQueue,
+            "errorMapper.inResetLoop": latest.errorMapperInResetLoop,
+            "cache.size": latest.cacheSize,
+            "cache.dirtyCount": latest.cacheDirtyCount,
+            "cache.pathCacheSize": latest.cachePathCacheSize,
+            "cache.heapRatio": latest.cacheHeapRatio,
+            "cache.evictedThisTick": latest.cacheEvictedThisTick,
+            "cache.commitCPU": latest.cacheCommitCPU,
+            "cache.schemaVersion": latest.cacheSchemaVersion,
+            "cache.bucketThrottled": latest.cacheBucketThrottled,
+        };
+
+        // Add room data
+        for (const room of latest.roomSnapshots) {
+            data[`rooms.${room.roomName}.energyAvailable`] = room.energyAvailable;
+            data[`rooms.${room.roomName}.energyCapacity`] = room.energyCapacity;
+            data[`rooms.${room.roomName}.controllerLevel`] = room.controllerLevel;
+            data[`rooms.${room.roomName}.controllerProgress`] = Number(room.controllerProgress);
+            data[`rooms.${room.roomName}.controllerProgressTotal`] = Number(room.controllerProgressTotal);
+            data[`rooms.${room.roomName}.storageEnergy`] = room.storageEnergy;
+            data[`rooms.${room.roomName}.terminalEnergy`] = room.terminalEnergy;
+            data[`rooms.${room.roomName}.creepCount`] = room.creepCount;
+            data[`rooms.${room.roomName}.hostileCount`] = room.hostileCount;
+        }
+
+        // Add process data
+        for (const proc of latest.processSnapshots) {
+            data[`processes.${proc.processName}`] = proc.cpuUsed;
+        }
+
+        // Add creep role data
+        for (const role of latest.creepRoles) {
+            data[`creeps.roles.${role.roleName}`] = role.count;
+        }
+
         res.json({
             tick: latest.tick,
             shard: latest.shard,
             recordedAt: latest.recordedAt.toISOString(),
-            data: latest.data,
+            data,
         });
     } catch (err) {
         console.error("tick-stats/latest error:", err);
@@ -138,9 +212,10 @@ router.get("/rooms", async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        const latest = await prisma.tickStat.findFirst({
+        const latest = await prisma.tickSnapshot.findFirst({
             where: { serverId },
             orderBy: { tick: "desc" },
+            include: { roomSnapshots: true },
         });
 
         if (!latest) {
@@ -148,20 +223,20 @@ router.get("/rooms", async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        // Extract rooms.* keys into nested structure
-        const data = latest.data as Record<string, unknown>;
+        // Build rooms object from typed child table
         const rooms: Record<string, Record<string, unknown>> = {};
-
-        for (const [key, val] of Object.entries(data)) {
-            if (key.startsWith("rooms.")) {
-                const parts = key.split(".");
-                if (parts.length >= 3) {
-                    const roomName = parts[1]; // e.g. "E1N8"
-                    const metric = parts.slice(2).join("."); // e.g. "energyAvailable"
-                    if (!rooms[roomName]) rooms[roomName] = {};
-                    rooms[roomName][metric] = val;
-                }
-            }
+        for (const room of latest.roomSnapshots) {
+            rooms[room.roomName] = {
+                energyAvailable: room.energyAvailable,
+                energyCapacity: room.energyCapacity,
+                controllerLevel: room.controllerLevel,
+                controllerProgress: Number(room.controllerProgress),
+                controllerProgressTotal: Number(room.controllerProgressTotal),
+                storageEnergy: room.storageEnergy,
+                terminalEnergy: room.terminalEnergy,
+                creepCount: room.creepCount,
+                hostileCount: room.hostileCount,
+            };
         }
 
         res.json({
@@ -196,26 +271,22 @@ router.get("/processes", async (req: AuthRequest, res: Response) => {
         }
 
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-        const tickStats = await prisma.tickStat.findMany({
+        const snapshots = await prisma.tickSnapshot.findMany({
             where: { serverId, recordedAt: { gte: since } },
             orderBy: { tick: "asc" },
             take: 500,
+            include: { processSnapshots: true },
         });
 
-        // Extract processes.* keys
         const processNames = new Set<string>();
-        const chartData = tickStats.map((ts) => {
-            const data = ts.data as Record<string, unknown>;
+        const chartData = snapshots.map((s) => {
             const point: Record<string, unknown> = {
-                tick: ts.tick,
-                time: ts.recordedAt.toISOString(),
+                tick: s.tick,
+                time: s.recordedAt.toISOString(),
             };
-            for (const [key, val] of Object.entries(data)) {
-                if (key.startsWith("processes.") && typeof val === "number") {
-                    const name = key.replace("processes.", "");
-                    processNames.add(name);
-                    point[name] = val;
-                }
+            for (const proc of s.processSnapshots) {
+                processNames.add(proc.processName);
+                point[proc.processName] = proc.cpuUsed;
             }
             return point;
         });
@@ -233,7 +304,6 @@ router.get("/processes", async (req: AuthRequest, res: Response) => {
 
 // ─── GET /api/tick-stats/energy?serverId=...&hours=24 ─────────────────────────
 // Returns per-room and empire-wide energy time-series.
-// Energy = energyAvailable + storageEnergy + terminalEnergy per room.
 router.get("/energy", async (req: AuthRequest, res: Response) => {
     try {
         const serverId = req.query.serverId as string;
@@ -253,45 +323,28 @@ router.get("/energy", async (req: AuthRequest, res: Response) => {
         }
 
         const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-        const tickStats = await prisma.tickStat.findMany({
+        const snapshots = await prisma.tickSnapshot.findMany({
             where: { serverId, recordedAt: { gte: since } },
             orderBy: { tick: "asc" },
             take: 2000,
+            include: { roomSnapshots: true },
         });
 
-        // Energy keys we sum per room
-        const ENERGY_KEYS = ["energyAvailable", "storageEnergy", "terminalEnergy"];
-
         const roomNames = new Set<string>();
-        const chartData = tickStats.map((ts) => {
-            const data = ts.data as Record<string, unknown>;
+        const chartData = snapshots.map((s) => {
             const point: Record<string, unknown> = {
-                tick: ts.tick,
-                time: ts.recordedAt.toISOString(),
+                tick: s.tick,
+                time: s.recordedAt.toISOString(),
             };
 
-            // Gather per-room energy totals
             let empireTotal = 0;
-            const roomTotals: Record<string, number> = {};
-
-            for (const [key, val] of Object.entries(data)) {
-                if (!key.startsWith("rooms.") || typeof val !== "number") continue;
-                const parts = key.split(".");
-                if (parts.length < 3) continue;
-                const roomName = parts[1];
-                const metric = parts.slice(2).join(".");
-                if (!ENERGY_KEYS.includes(metric)) continue;
-
-                roomNames.add(roomName);
-                roomTotals[roomName] = (roomTotals[roomName] || 0) + val;
-            }
-
-            for (const [room, total] of Object.entries(roomTotals)) {
-                point[room] = total;
+            for (const room of s.roomSnapshots) {
+                roomNames.add(room.roomName);
+                const total = room.energyAvailable + room.storageEnergy + room.terminalEnergy;
+                point[room.roomName] = total;
                 empireTotal += total;
             }
             point["empire"] = empireTotal;
-
             return point;
         });
 

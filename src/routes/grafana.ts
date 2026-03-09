@@ -4,36 +4,37 @@ import prisma from "../lib/prisma.js";
 const router = Router();
 
 // ─── GET /api/grafana ────────────────────────────────────────────────────────
-// Health check — Grafana Simple JSON datasource pings this to verify connectivity.
+// Health check for Grafana SimpleJSON datasource.
 router.get("/", (_req: Request, res: Response) => {
     res.json({ status: "ok" });
 });
 
 // ─── POST /api/grafana/search ────────────────────────────────────────────────
 // Returns available metric targets for the Grafana query editor.
-// Metrics are formatted as "ServerName / key" for each JSON key found in stat data.
+// Metrics are typed columns from TickSnapshot, prefixed with server name.
 router.post("/search", async (_req: Request, res: Response) => {
     try {
         const servers = await prisma.screepsServer.findMany({
             select: { id: true, name: true },
         });
 
-        // For each server, grab one recent stat to discover available keys
+        const metricKeys = [
+            "cpuUsed", "cpuLimit", "cpuBucket", "cpuTickLimit",
+            "gclLevel", "gclProgress", "gclProgressTotal",
+            "gplLevel", "gplProgress", "gplProgressTotal",
+            "heapRatio", "marketCredits",
+            "creepsMy", "creepsHostile",
+            "spawnsTotal", "spawnsActive", "spawnsUtilization",
+            "defenseTowerCount", "defenseTowerEnergy",
+            "errorMapperTotalErrors", "errorMapperCpuUsed",
+        ];
+
         const targets: string[] = [];
         for (const server of servers) {
-            const recentStat = await prisma.stat.findFirst({
-                where: { serverId: server.id },
-                orderBy: { recordedAt: "desc" },
-            });
-
-            if (recentStat && typeof recentStat.data === "object" && recentStat.data !== null) {
-                const data = recentStat.data as Record<string, unknown>;
-                for (const key of Object.keys(data)) {
-                    targets.push(`${server.name} / ${key}`);
-                }
+            for (const key of metricKeys) {
+                targets.push(`${server.name} / ${key}`);
             }
-
-            // Always add a "logs" pseudo-target per server
+            // Also offer log target
             targets.push(`${server.name} / logs`);
         }
 
@@ -69,19 +70,19 @@ router.post("/query", async (req: Request, res: Response) => {
             const slashIdx = targetStr.indexOf(" / ");
             if (slashIdx === -1) continue;
 
-            const serverName = targetStr.slice(0, slashIdx);
-            const metricKey = targetStr.slice(slashIdx + 3);
+            const serverName = targetStr.substring(0, slashIdx);
+            const metricKey = targetStr.substring(slashIdx + 3);
             const serverId = serverMap.get(serverName);
             if (!serverId) continue;
 
-            // Special case: "logs" returns table data
+            // Special case: logs as table
             if (metricKey === "logs") {
                 const logs = await prisma.log.findMany({
                     where: {
                         serverId,
                         timestamp: { gte: from, lte: to },
                     },
-                    orderBy: { timestamp: "asc" },
+                    orderBy: { timestamp: "desc" },
                     take: limit,
                 });
 
@@ -101,9 +102,9 @@ router.post("/query", async (req: Request, res: Response) => {
                 continue;
             }
 
-            // Timeseries: extract the metric key from each stat's JSON data
+            // Timeseries: query typed column directly
             if (targetType === "timeserie" || targetType === "timeseries") {
-                const stats = await prisma.stat.findMany({
+                const snapshots = await prisma.tickSnapshot.findMany({
                     where: {
                         serverId,
                         recordedAt: { gte: from, lte: to },
@@ -113,15 +114,12 @@ router.post("/query", async (req: Request, res: Response) => {
                 });
 
                 const datapoints: [number, number][] = [];
-                for (const stat of stats) {
-                    const data = stat.data as Record<string, unknown>;
-                    const value = data[metricKey];
-                    if (typeof value === "number") {
-                        datapoints.push([value, stat.recordedAt.getTime()]);
-                    } else if (typeof value === "string") {
-                        const num = parseFloat(value);
-                        if (!isNaN(num)) {
-                            datapoints.push([num, stat.recordedAt.getTime()]);
+                for (const snap of snapshots) {
+                    const val = (snap as Record<string, unknown>)[metricKey];
+                    if (val !== undefined) {
+                        const numVal = typeof val === "bigint" ? Number(val) : Number(val);
+                        if (!isNaN(numVal)) {
+                            datapoints.push([numVal, snap.recordedAt.getTime()]);
                         }
                     }
                 }
@@ -131,8 +129,8 @@ router.post("/query", async (req: Request, res: Response) => {
                     datapoints,
                 });
             } else if (targetType === "table") {
-                // Table format for stat data
-                const stats = await prisma.stat.findMany({
+                // Table format for TickSnapshot data
+                const snapshots = await prisma.tickSnapshot.findMany({
                     where: {
                         serverId,
                         recordedAt: { gte: from, lte: to },
@@ -141,30 +139,15 @@ router.post("/query", async (req: Request, res: Response) => {
                     take: limit,
                 });
 
-                // Collect all unique keys across all stats
-                const allKeys = new Set<string>();
-                for (const stat of stats) {
-                    const data = stat.data as Record<string, unknown>;
-                    for (const key of Object.keys(data)) allKeys.add(key);
-                }
-
                 const columns = [
-                    { text: "Time", type: "time" as const },
-                    ...Array.from(allKeys).map((k) => ({
-                        text: k,
-                        type: "number" as const,
-                    })),
+                    { text: "Time", type: "time" },
+                    { text: metricKey, type: "number" },
                 ];
 
-                const rows = stats.map((stat) => {
-                    const data = stat.data as Record<string, unknown>;
-                    return [
-                        stat.recordedAt.getTime(),
-                        ...Array.from(allKeys).map((k) => {
-                            const v = data[k];
-                            return typeof v === "number" ? v : v ?? null;
-                        }),
-                    ];
+                const rows = snapshots.map((snap) => {
+                    const val = (snap as Record<string, unknown>)[metricKey];
+                    const numVal = typeof val === "bigint" ? Number(val) : Number(val);
+                    return [snap.recordedAt.getTime(), isNaN(numVal) ? null : numVal];
                 });
 
                 results.push({ type: "table", columns, rows });
@@ -191,29 +174,28 @@ router.post("/annotations", async (req: Request, res: Response) => {
         const servers = await prisma.screepsServer.findMany({
             select: { id: true, name: true },
         });
-
-        // Filter to matching servers if query is provided
-        const matchingServers = query
-            ? servers.filter((s) =>
-                s.name.toLowerCase().includes(query.toLowerCase())
-            )
-            : servers;
-
-        const serverIds = matchingServers.map((s) => s.id);
         const serverNameMap = new Map(servers.map((s) => [s.id, s.name]));
 
+        const where: Record<string, unknown> = {
+            timestamp: { gte: from, lte: to },
+        };
+
+        if (query) {
+            const matchedServer = servers.find((s) =>
+                query.toLowerCase().includes(s.name.toLowerCase())
+            );
+            if (matchedServer) {
+                where.serverId = matchedServer.id;
+            }
+        }
+
         const logs = await prisma.log.findMany({
-            where: {
-                serverId: { in: serverIds },
-                timestamp: { gte: from, lte: to },
-                severity: { in: ["WARN", "ERROR"] }, // Only notable events
-            },
-            orderBy: { timestamp: "asc" },
+            where,
+            orderBy: { timestamp: "desc" },
             take: 100,
         });
 
         const annotations = logs.map((log) => ({
-            annotation,
             time: log.timestamp.getTime(),
             title: `[${log.severity}] ${serverNameMap.get(log.serverId) || "Unknown"}`,
             tags: [log.severity, serverNameMap.get(log.serverId) || ""],
