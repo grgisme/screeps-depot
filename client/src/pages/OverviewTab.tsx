@@ -110,23 +110,19 @@ export default function OverviewTab({ serverId }: Props) {
     return (
         <div className="space-y-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {kpis.map((kpi) => (
                     <div
                         key={kpi.label}
-                        className="rounded-xl p-4"
-                        style={{
-                            backgroundColor: "var(--bg-card)",
-                            border: "1px solid var(--border)",
-                        }}
+                        className="glass-panel-interactive rounded-2xl p-5 flex flex-col"
                     >
-                        <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">
                             {kpi.label}
                         </p>
-                        <p className="text-2xl font-bold" style={{ color: kpi.color }}>
+                        <p className="text-3xl font-bold tracking-tight mt-auto" style={{ color: kpi.color, textShadow: `0 0 20px ${kpi.color}40` }}>
                             {isLoading ? "..." : kpi.value}
                             {kpi.sub && (
-                                <span className="text-sm font-normal ml-1" style={{ color: "var(--text-muted)" }}>
+                                <span className="text-sm font-medium ml-1.5 opacity-70">
                                     {kpi.sub}
                                 </span>
                             )}
@@ -137,31 +133,32 @@ export default function OverviewTab({ serverId }: Props) {
 
             {/* Tick info */}
             {latest && (
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    Tick {latest.tick} · {latest.shard} · {new Date(latest.recordedAt).toLocaleString()}
-                </p>
+                <div className="flex items-center gap-2 px-1">
+                    <div className="w-2 h-2 rounded-full bg-[var(--success)] shadow-[0_0_8px_var(--success)] animate-pulse"></div>
+                    <p className="text-xs text-[var(--text-muted)] font-medium tracking-wide">
+                        Tick <span className="text-[var(--text-primary)]">{latest.tick}</span> · Shard <span className="text-[var(--text-primary)]">{latest.shard}</span> · {new Date(latest.recordedAt).toLocaleString()}
+                    </p>
+                </div>
             )}
 
             {/* CPU Time-Series Chart */}
-            <div
-                className="rounded-xl p-6"
-                style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                        CPU Usage
+            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                {/* Subtle top border highlight */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
+
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                    <h3 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--accent)]">⚡</span> CPU Usage History
                     </h3>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 p-1 bg-[var(--bg-input)] rounded-xl border border-[var(--border-light)] shadow-inner shadow-[var(--bg-base)]">
                         {[1, 6, 24, 72].map((h) => (
                             <button
                                 key={h}
                                 onClick={() => setHours(h)}
-                                className="rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all"
-                                style={{
-                                    backgroundColor: hours === h ? "var(--accent)" : "transparent",
-                                    color: hours === h ? "#fff" : "var(--text-muted)",
-                                    border: `1px solid ${hours === h ? "var(--accent)" : "var(--border)"}`,
-                                }}
+                                className={`rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${hours === h
+                                        ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]"
+                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    }`}
                             >
                                 {h < 24 ? `${h}h` : `${h / 24}d`}
                             </button>
@@ -170,22 +167,23 @@ export default function OverviewTab({ serverId }: Props) {
                 </div>
 
                 {chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="time" tickFormatter={formatTime} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)" }} />
-                            <YAxis stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)" }} width={50} />
+                    <ResponsiveContainer width="100%" height={280}>
+                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                            <XAxis dataKey="time" tickFormatter={formatTime} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} tickLine={false} axisLine={false} dy={10} />
+                            <YAxis stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} width={60} tickLine={false} axisLine={false} dx={-10} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "12px" }}
+                                contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)" }}
                                 labelFormatter={(l) => new Date(l as string).toLocaleString()}
+                                itemStyle={{ fontWeight: 500 }}
                             />
-                            <Line type="monotone" dataKey="cpu.used" stroke="#3b82f6" strokeWidth={2} dot={false} name="CPU Used" />
-                            <Line type="monotone" dataKey="cpu.limit" stroke="#ef4444" strokeWidth={1} dot={false} strokeDasharray="5 5" name="CPU Limit" />
+                            <Line type="monotone" dataKey="cpu.used" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: "#3b82f6", style: { filter: "drop-shadow(0px 0px 5px rgba(59,130,246,0.8))" } }} name="CPU Used" />
+                            <Line type="monotone" dataKey="cpu.limit" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="6 4" name="CPU Limit" opacity={0.8} />
                         </LineChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
-                        {isLoading ? "Loading..." : "No tick stats yet. Poll some data first."}
+                    <p className="text-sm text-center py-12 text-[var(--text-muted)]">
+                        {isLoading ? "Loading data from Depot..." : "No tick stats yet. Poll some data first."}
                     </p>
                 )}
             </div>

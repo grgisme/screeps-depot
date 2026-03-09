@@ -86,16 +86,17 @@ export default function PerformanceTab({ serverId }: Props) {
     return (
         <div className="space-y-6">
             {/* System Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {systemMetrics.map((m) => {
                     let displayVal = Number(m.value);
                     if (m.divisor) displayVal /= m.divisor;
                     if (m.multiplier) displayVal *= m.multiplier;
                     return (
-                        <div key={m.label} className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                            <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>{m.label}</p>
-                            <p className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-                                {isLoading ? "..." : `${displayVal.toFixed(m.unit === "%" ? 0 : 1)} ${m.unit}`}
+                        <div key={m.label} className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                            <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">{m.label}</p>
+                            <p className="text-2xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--text-primary)" }}>
+                                {isLoading ? "..." : `${displayVal.toFixed(m.unit === "%" ? 0 : 1)} `}
+                                {m.unit && <span className="text-sm border-none bg-transparent opacity-60 ml-0.5">{m.unit}</span>}
                             </p>
                         </div>
                     );
@@ -103,15 +104,15 @@ export default function PerformanceTab({ serverId }: Props) {
             </div>
 
             {/* Process CPU Chart */}
-            <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                        ⚡ CPU by Process
+            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                    <h3 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--accent)]">⚡</span> CPU by Process
                     </h3>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 p-1 bg-[var(--bg-input)] rounded-xl border border-[var(--border-light)] shadow-inner shadow-[var(--bg-base)]">
                         {[1, 6, 24].map((h) => (
-                            <button key={h} onClick={() => setHours(h)} className="rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all"
-                                style={{ backgroundColor: hours === h ? "var(--accent)" : "transparent", color: hours === h ? "#fff" : "var(--text-muted)", border: `1px solid ${hours === h ? "var(--accent)" : "var(--border)"}` }}>
+                            <button key={h} onClick={() => setHours(h)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${hours === h ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]" : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"}`}>
                                 {h}h
                             </button>
                         ))}
@@ -120,47 +121,48 @@ export default function PerformanceTab({ serverId }: Props) {
 
                 {processData.length > 0 && processes.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={processData.length > 50 ? processData.slice(-50) : processData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="tick" stroke="var(--text-muted)" fontSize={10} tick={{ fill: "var(--text-muted)" }} />
-                            <YAxis stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)" }} width={40} />
-                            <Tooltip contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "11px" }} />
-                            <Legend wrapperStyle={{ fontSize: "11px" }} />
+                        <BarChart data={processData.length > 50 ? processData.slice(-50) : processData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                            <XAxis dataKey="tick" stroke="var(--text-muted)" fontSize={10} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} tickLine={false} axisLine={false} dy={10} />
+                            <YAxis stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} width={60} tickLine={false} axisLine={false} dx={-10} />
+                            <Tooltip contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)" }} itemStyle={{ fontWeight: 500 }} cursor={{ fill: "var(--bg-card-hover)", opacity: 0.4 }} />
+                            <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px", opacity: 0.9 }} iconType="circle" />
                             {processes.slice(0, 10).map((proc, i) => (
-                                <Bar key={proc} dataKey={proc} stackId="cpu" fill={PROCESS_COLORS[i % PROCESS_COLORS.length]} />
+                                <Bar key={proc} dataKey={proc} stackId="cpu" fill={PROCESS_COLORS[i % PROCESS_COLORS.length]} radius={[2, 2, 0, 0]} />
                             ))}
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
-                        {isLoading ? "Loading..." : "No process CPU data. Make sure your bot exports processes.* stats."}
+                    <p className="text-sm text-center py-12 text-[var(--text-muted)]">
+                        {isLoading ? "Loading data from Depot..." : "No process CPU data. Make sure your bot exports processes.* stats."}
                     </p>
                 )}
             </div>
 
             {/* Function Profiler Table */}
             {functionMetrics.length > 0 && (
-                <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                    <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
-                        🔬 Function Profiler (Latest Tick)
+                <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
+                    <h3 className="text-base font-semibold mb-5 text-[var(--text-primary)] flex items-center gap-2 relative z-10">
+                        <span className="text-[var(--accent)]">🔬</span> Function Profiler (Latest Tick)
                     </h3>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto rounded-xl border border-[var(--border-light)] bg-[#030712]/30">
                         <table className="w-full text-sm">
-                            <thead>
-                                <tr style={{ color: "var(--text-muted)" }}>
-                                    <th className="text-left py-2 px-3 font-medium">Function</th>
-                                    <th className="text-right py-2 px-3 font-medium">CPU (ms)</th>
-                                    <th className="text-right py-2 px-3 font-medium">Calls</th>
-                                    <th className="text-right py-2 px-3 font-medium">Max (ms)</th>
+                            <thead className="bg-[var(--bg-card-hover)]/30 backdrop-blur-sm">
+                                <tr className="text-[var(--text-muted)] border-b border-[var(--border-light)]">
+                                    <th className="text-left py-3 px-4 font-semibold text-xs tracking-wider uppercase">Function</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs tracking-wider uppercase">CPU (ms)</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs tracking-wider uppercase">Calls</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-xs tracking-wider uppercase">Max (ms)</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-[var(--border-light)]">
                                 {functionMetrics.slice(0, 20).map((fn) => (
-                                    <tr key={fn.name} style={{ borderTop: "1px solid var(--border)" }}>
-                                        <td className="py-2 px-3 font-mono text-xs" style={{ color: "var(--text-primary)" }}>{fn.name}</td>
-                                        <td className="py-2 px-3 text-right font-mono" style={{ color: "#3b82f6" }}>{fn.cpu.toFixed(2)}</td>
-                                        <td className="py-2 px-3 text-right font-mono" style={{ color: "var(--text-secondary)" }}>{fn.calls}</td>
-                                        <td className="py-2 px-3 text-right font-mono" style={{ color: "#f59e0b" }}>{fn.max.toFixed(2)}</td>
+                                    <tr key={fn.name} className="hover:bg-[var(--bg-card-hover)]/40 transition-colors">
+                                        <td className="py-2.5 px-4 font-mono text-xs text-[var(--text-primary)]">{fn.name}</td>
+                                        <td className="py-2.5 px-4 text-right font-mono font-medium text-blue-400">{fn.cpu.toFixed(2)}</td>
+                                        <td className="py-2.5 px-4 text-right font-mono text-[var(--text-secondary)]">{fn.calls}</td>
+                                        <td className="py-2.5 px-4 text-right font-mono font-medium text-amber-400">{fn.max.toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>

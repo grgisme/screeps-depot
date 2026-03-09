@@ -105,22 +105,13 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header
-                className="sticky top-0 z-10"
-                style={{
-                    backgroundColor: "var(--bg-secondary)",
-                    borderBottom: "1px solid var(--border)",
-                    backdropFilter: "blur(12px)",
-                }}
-            >
+            <header className="sticky top-0 z-50 glass-panel border-t-0 border-x-0 rounded-none border-b border-[var(--border-light)]">
                 <div style={{ maxWidth: "1152px", marginLeft: "auto", marginRight: "auto", paddingLeft: "1.5rem", paddingRight: "1.5rem" }}>
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-4">
-                            <h1
-                                className="text-xl font-bold"
-                                style={{ color: "var(--text-primary)" }}
-                            >
-                                🏗️ Screeps Depot
+                            <h1 className="text-xl font-bold tracking-tight text-glow flex items-center gap-2">
+                                <span className="text-[var(--accent)]">✨</span>
+                                <span style={{ color: "var(--text-primary)" }}>Screeps Depot</span>
                             </h1>
 
                             {!isLoadingServers && servers.length > 0 && (
@@ -161,37 +152,17 @@ export default function Dashboard() {
                                         }
                                     }}
                                     disabled={isPolling}
-                                    className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all disabled:opacity-50"
-                                    style={{
-                                        backgroundColor: "transparent",
-                                        border: "1px solid var(--border)",
-                                        color: "var(--accent)",
-                                    }}
-                                    onMouseEnter={(e) =>
-                                        (e.currentTarget.style.borderColor = "var(--accent)")
-                                    }
-                                    onMouseLeave={(e) =>
-                                        (e.currentTarget.style.borderColor = "var(--border)")
-                                    }
+                                    className="glass-panel-interactive rounded-lg px-4 py-1.5 text-sm font-medium cursor-pointer transition-all disabled:opacity-50 flex items-center gap-2"
+                                    style={{ color: "var(--accent)" }}
                                 >
-                                    {isPolling ? "Polling..." : "📡 Poll Now"}
+                                    {isPolling ? "📡 Polling..." : "📡 Poll Now"}
                                 </button>
                             )}
                             {activeServer && (
                                 <button
                                     onClick={() => openEditModal(activeServer)}
-                                    className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all"
-                                    style={{
-                                        backgroundColor: "transparent",
-                                        border: "1px solid var(--border)",
-                                        color: "var(--text-secondary)",
-                                    }}
-                                    onMouseEnter={(e) =>
-                                        (e.currentTarget.style.borderColor = "var(--accent)")
-                                    }
-                                    onMouseLeave={(e) =>
-                                        (e.currentTarget.style.borderColor = "var(--border)")
-                                    }
+                                    className="glass-panel-interactive rounded-lg px-4 py-1.5 text-sm font-medium cursor-pointer flex items-center gap-2"
+                                    style={{ color: "var(--text-secondary)" }}
                                     title="Server Settings"
                                 >
                                     ⚙️ Settings
@@ -200,18 +171,8 @@ export default function Dashboard() {
                             <button
                                 id="logout-btn"
                                 onClick={logout}
-                                className="rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-all"
-                                style={{
-                                    backgroundColor: "transparent",
-                                    border: "1px solid var(--border)",
-                                    color: "var(--text-secondary)",
-                                }}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--error)")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.borderColor = "var(--border)")
-                                }
+                                className="glass-panel-interactive rounded-lg px-4 py-1.5 text-sm font-medium cursor-pointer hover:text-[var(--error)] transition-colors"
+                                style={{ color: "var(--text-secondary)" }}
                             >
                                 Logout
                             </button>
@@ -250,12 +211,18 @@ export default function Dashboard() {
                         </p>
                         <button
                             onClick={openCreateModal}
-                            className="px-6 py-3 rounded-xl font-medium transition-colors cursor-pointer"
+                            className="px-6 py-3 rounded-xl font-medium transition-all cursor-pointer shadow-lg shadow-[var(--accent-glow)]"
                             style={{ backgroundColor: "var(--accent)", color: "#fff" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-hover)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent)")}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "var(--accent-hover)";
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "var(--accent)";
+                                e.currentTarget.style.transform = "translateY(0)";
+                            }}
                         >
-                            + Add Your First Server
+                            <span className="mr-2">✨</span> Add Your First Server
                         </button>
                     </div>
                 ) : (

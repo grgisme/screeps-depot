@@ -59,47 +59,49 @@ export default function MarketTab({ serverId }: Props) {
         <div className="space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Credits</p>
-                    <p className="text-3xl font-bold" style={{ color: "#22c55e" }}>
+                <div className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                    <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Credits</p>
+                    <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--success)", textShadow: "0 0 20px rgba(34, 197, 94, 0.4)" }}>
                         {isLoading ? "..." : typeof data["market.credits"] === "number" ? formatNumber(data["market.credits"] as number) : "—"}
                     </p>
                 </div>
-                <div className="rounded-xl p-5" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Active Orders</p>
-                    <p className="text-3xl font-bold" style={{ color: "#f59e0b" }}>
+                <div className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                    <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Active Orders</p>
+                    <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--warning)", textShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>
                         {isLoading ? "..." : typeof data["market.activeOrders"] === "number" ? String(data["market.activeOrders"]) : "—"}
                     </p>
                 </div>
             </div>
 
             {/* Credits Chart */}
-            <div className="rounded-xl p-6" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>💰 Credits Over Time</h3>
-                    <div className="flex gap-1">
+            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
+
+                <div className="flex items-center justify-between mb-6 relative z-10">
+                    <h3 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-yellow-400">💰</span> Credits Over Time
+                    </h3>
+                    <div className="flex gap-1 p-1 bg-[var(--bg-input)] rounded-xl border border-[var(--border-light)] shadow-inner shadow-[var(--bg-base)]">
                         {[6, 24, 72, 168].map((h) => (
-                            <button key={h} onClick={() => setHours(h)} className="rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all"
-                                style={{ backgroundColor: hours === h ? "var(--accent)" : "transparent", color: hours === h ? "#fff" : "var(--text-muted)", border: `1px solid ${hours === h ? "var(--accent)" : "var(--border)"}` }}>
+                            <button key={h} onClick={() => setHours(h)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${hours === h ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]" : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"}`}>
                                 {h < 24 ? `${h}h` : `${h / 24}d`}
                             </button>
                         ))}
                     </div>
                 </div>
                 {chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="time" tickFormatter={formatTime} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)" }} />
-                            <YAxis tickFormatter={formatNumber} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)" }} width={60} />
-                            <Tooltip contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "12px" }}
-                                labelFormatter={(l) => new Date(l as string).toLocaleString()} />
-                            <Line type="monotone" dataKey="market.credits" stroke="#22c55e" strokeWidth={2} dot={false} name="Credits" />
+                    <ResponsiveContainer width="100%" height={280}>
+                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                            <XAxis dataKey="time" tickFormatter={formatTime} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} tickLine={false} axisLine={false} dy={10} />
+                            <YAxis tickFormatter={formatNumber} stroke="var(--text-muted)" fontSize={11} tick={{ fill: "var(--text-muted)", opacity: 0.8 }} width={60} tickLine={false} axisLine={false} dx={-10} />
+                            <Tooltip contentStyle={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-light)", borderRadius: "12px", color: "var(--text-primary)", fontSize: "12px", backdropFilter: "blur(12px)", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)" }} labelFormatter={(l) => new Date(l as string).toLocaleString()} itemStyle={{ fontWeight: 500 }} />
+                            <Line type="monotone" dataKey="market.credits" stroke="var(--success)" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: "var(--success)", style: { filter: "drop-shadow(0px 0px 5px rgba(34,197,94,0.8))" } }} name="Credits" />
                         </LineChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>
-                        {isLoading ? "Loading..." : "No market data yet. Ensure your bot exports market.* stats."}
+                    <p className="text-sm text-center py-12 text-[var(--text-muted)]">
+                        {isLoading ? "Loading data from Depot..." : "No market data yet. Ensure your bot exports market.* stats."}
                     </p>
                 )}
             </div>

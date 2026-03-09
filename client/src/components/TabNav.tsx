@@ -16,29 +16,21 @@ const TABS = [
 
 export default function TabNav({ activeTab, onChange }: Props) {
     return (
-        <div
-            className="flex gap-1 rounded-xl p-1 overflow-x-auto"
-            style={{ backgroundColor: "var(--bg-secondary)" }}
-        >
+        <div className="flex gap-2 rounded-2xl p-1.5 overflow-x-auto glass-panel mb-2 border border-[var(--border-light)] shadow-lg shadow-[var(--bg-base)] scrollbar-hide w-full max-w-full">
             {TABS.map((tab) => (
                 <button
                     key={tab.id}
                     onClick={() => onChange(tab.id)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap cursor-pointer transition-all"
-                    style={{
-                        backgroundColor:
-                            activeTab === tab.id ? "var(--bg-card)" : "transparent",
-                        color:
-                            activeTab === tab.id
-                                ? "var(--text-primary)"
-                                : "var(--text-muted)",
-                        boxShadow:
-                            activeTab === tab.id
-                                ? "0 1px 3px rgba(0,0,0,0.2)"
-                                : "none",
-                    }}
+                    className={`relative px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap cursor-pointer transition-all duration-300 flex items-center gap-2 ${activeTab === tab.id
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)]"
+                        }`}
                 >
-                    {tab.icon} {tab.label}
+                    {activeTab === tab.id && (
+                        <div className="absolute inset-0 bg-[var(--accent)]/20 border border-[var(--accent)]/30 rounded-xl shadow-[0_0_15px_var(--accent-glow)] -z-10" />
+                    )}
+                    <span className="opacity-90">{tab.icon}</span>
+                    <span className={activeTab === tab.id ? "text-glow" : ""}>{tab.label}</span>
                 </button>
             ))}
         </div>
