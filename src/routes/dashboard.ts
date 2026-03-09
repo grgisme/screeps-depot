@@ -140,18 +140,12 @@ router.get("/logs", async (req: AuthRequest, res: Response) => {
 });
 
 // ─── POST /api/dashboard/retention/run ────────────────────────────────────────
-// Manually trigger a retention pass. Useful when the DB is close to capacity.
+// Manually trigger a retention pass and auto-tune. Useful when the DB is close to capacity.
 router.post("/retention/run", async (_req: AuthRequest, res: Response) => {
     try {
-        const retentionHours = parseInt(
-            process.env.DATA_RETENTION_HOURS || "48",
-            10
-        );
-        const consoleRetentionHours = parseInt(
-            process.env.CONSOLE_RETENTION_HOURS || "6",
-            10
-        );
-        const result = await pruneOldData(retentionHours, consoleRetentionHours);
+        const { tuneRetentionSettings } = await import("../services/retention.js");
+        await tuneRetentionSettings();
+        const result = await pruneOldData();
         res.json(result);
     } catch (err) {
         console.error("Retention run error:", err);
@@ -160,19 +154,26 @@ router.post("/retention/run", async (_req: AuthRequest, res: Response) => {
 });
 
 // ─── GET /api/dashboard/retention/stats ───────────────────────────────────────
-// Returns current row counts for all time-series tables.
+// Returns current row counts, configured retention hours, and actual DB sizes.
 router.get("/retention/stats", async (_req: AuthRequest, res: Response) => {
     try {
-        const counts = await getTableCounts();
-        const retentionHours = parseInt(
-            process.env.DATA_RETENTION_HOURS || "48",
-            10
-        );
-        const consoleRetentionHours = parseInt(
-            process.env.CONSOLE_RETENTION_HOURS || "6",
-            10
-        );
-        res.json({ counts, retentionHours, consoleRetentionHours });
+        const { getRetentionSettings } = await import("../services/retention.js");
+
+        const [counts, settings, latestDiagnostic] = await Promise.all([
+            getTableCounts(),
+            getRetentionSettings(),
+            prisma.systemDiagnostic.findFirst({
+                where: { type: "db_table_sizes" },
+                orderBy: { recordedAt: "desc" }
+            })
+        ]);
+
+        res.json({
+            counts,
+            retentionHours: settings.retentionHours,
+            consoleRetentionHours: settings.consoleRetentionHours,
+            diagnostic: latestDiagnostic || null
+        });
     } catch (err) {
         console.error("Retention stats error:", err);
         res.status(500).json({ error: "Failed to get table counts" });

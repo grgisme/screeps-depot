@@ -215,3 +215,22 @@ model Log {
   @@index([severity])
 }
 
+// ─── SystemDiagnostic ────────────────────────────────────────────────────────
+// Generic table for periodic system checks (e.g., measuring DB size).
+model SystemDiagnostic {
+  id         Int      @id @default(autoincrement())
+  type       String   // e.g., "db_table_sizes"
+  data       Json     // Arbitrary payload
+  recordedAt DateTime @default(now())
+
+  @@index([type, recordedAt])
+}
+
+// ─── SystemSetting ───────────────────────────────────────────────────────────
+// Durable key-value store for app configuration that changes at runtime.
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
