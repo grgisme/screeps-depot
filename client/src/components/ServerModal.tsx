@@ -74,47 +74,33 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
         }
     }
 
+    const inputClasses = "w-full bg-white/5 border border-[var(--border-light)] rounded-lg px-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-colors text-[var(--text-primary)] placeholder:text-[var(--text-muted)]";
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}>
-            <div
-                className="w-full max-w-md rounded-xl p-8 shadow-xl"
-                style={{
-                    backgroundColor: "var(--bg-card)",
-                    border: "1px solid var(--border)"
-                }}
-            >
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-[var(--bg-base)] border border-[var(--border-light)] rounded-2xl p-6 shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-                        {isEdit ? "Edit Server settings" : "Add new Server"}
+                    <h2 className="text-xl font-outfit font-bold text-[var(--text-primary)]">
+                        {isEdit ? "Edit Server Settings" : "Add New Server"}
                     </h2>
                     <button
                         onClick={onClose}
-                        className="text-xl leading-none cursor-pointer"
-                        style={{ color: "var(--text-muted)" }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = "var(--text-primary)"}
-                        onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
+                        className="text-xl leading-none cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
                         &times;
                     </button>
                 </div>
 
                 {error && (
-                    <div
-                        className="rounded-lg px-4 py-3 mb-6 text-sm flex items-center justify-between"
-                        style={{
-                            backgroundColor: "rgba(239, 68, 68, 0.1)",
-                            border: "1px solid rgba(239, 68, 68, 0.3)",
-                            color: "var(--error)",
-                        }}
-                    >
+                    <div className="rounded-lg px-4 py-3 mb-4 text-sm flex items-center justify-between border border-[var(--error)] bg-red-500/10 text-[var(--error)]">
                         <span>{error}</span>
                         <button onClick={() => setError(null)} className="ml-2 hover:opacity-70 cursor-pointer">✕</button>
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
                             Server Name *
                         </label>
                         <input
@@ -123,17 +109,12 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                             onChange={e => setName(e.target.value)}
                             required
                             placeholder="e.g. MMO, Season 8, Localhost"
-                            className="w-full rounded-lg px-4 py-2 text-sm outline-none transition-all"
-                            style={{
-                                backgroundColor: "var(--bg-input)",
-                                border: "1px solid var(--border)",
-                                color: "var(--text-primary)",
-                            }}
+                            className={inputClasses}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
                             API Base URL
                         </label>
                         <input
@@ -141,17 +122,12 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                             value={apiBaseUrl}
                             onChange={e => setApiBaseUrl(e.target.value)}
                             required
-                            className="w-full rounded-lg px-4 py-2 text-sm outline-none transition-all"
-                            style={{
-                                backgroundColor: "var(--bg-input)",
-                                border: "1px solid var(--border)",
-                                color: "var(--text-primary)",
-                            }}
+                            className={inputClasses}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
                             Screeps API Token
                         </label>
                         <input
@@ -159,31 +135,21 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                             value={apiToken}
                             onChange={e => setApiToken(e.target.value)}
                             placeholder="Optional: Used for Pull Mode"
-                            className="w-full rounded-lg px-4 py-2 text-sm outline-none transition-all"
-                            style={{
-                                backgroundColor: "var(--bg-input)",
-                                border: "1px solid var(--border)",
-                                color: "var(--text-primary)",
-                            }}
+                            className={inputClasses}
                         />
-                        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-xs mt-1 text-[var(--text-muted)]">
                             Required if you want the depot to automatically pull your stats.
                         </p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
                             Shard
                         </label>
                         <select
                             value={shard}
                             onChange={e => setShard(e.target.value)}
-                            className="w-full rounded-lg px-4 py-2 text-sm outline-none transition-all cursor-pointer"
-                            style={{
-                                backgroundColor: "var(--bg-input)",
-                                border: "1px solid var(--border)",
-                                color: "var(--text-primary)",
-                            }}
+                            className={`${inputClasses} cursor-pointer`}
                         >
                             <option value="shard0">shard0</option>
                             <option value="shard1">shard1</option>
@@ -192,29 +158,29 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2">
                         <input
                             type="checkbox"
                             id="polling-toggle"
                             checked={pollingEnabled}
                             onChange={e => setPollingEnabled(e.target.checked)}
                             className="w-4 h-4 cursor-pointer rounded"
-                            style={{ accentColor: "var(--accent)", backgroundColor: "var(--bg-input)", border: "1px solid var(--border)" }}
+                            style={{ accentColor: "var(--accent)" }}
                         />
-                        <label htmlFor="polling-toggle" className="text-sm cursor-pointer select-none" style={{ color: "var(--text-primary)" }}>
+                        <label htmlFor="polling-toggle" className="text-sm cursor-pointer select-none text-[var(--text-primary)]">
                             Enable Background Polling
                         </label>
                     </div>
 
                     {isEdit && server && (
-                        <div className="pt-4 mt-4 space-y-3" style={{ borderTop: "1px solid var(--border)" }}>
-                            <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                        <div className="pt-4 mt-2 space-y-3 border-t border-[var(--border-light)]">
+                            <p className="text-xs font-semibold text-[var(--text-muted)]">
                                 🔌 API / MCP Access
                             </p>
 
                             {/* Server ID */}
                             <div>
-                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+                                <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">
                                     Server ID
                                 </label>
                                 <div className="flex gap-2">
@@ -222,20 +188,12 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                                         type="text"
                                         readOnly
                                         value={server.id}
-                                        className="w-full rounded-lg px-3 py-1.5 text-xs font-mono outline-none"
-                                        style={{
-                                            backgroundColor: "var(--bg-input)",
-                                            border: "1px solid var(--border)",
-                                            color: "var(--text-muted)",
-                                        }}
+                                        className="w-full bg-white/5 border border-[var(--border-light)] rounded-lg px-3 py-1.5 text-xs font-mono outline-none text-[var(--text-muted)]"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => { navigator.clipboard.writeText(server.id); }}
-                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
-                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
-                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0 border border-[var(--border-light)] bg-white/5 text-[var(--text-primary)] hover:bg-white/10"
                                         title="Copy Server ID"
                                     >
                                         📋
@@ -245,28 +203,20 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
 
                             {/* Push Token / API Key */}
                             <div>
-                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-                                    API Key <span style={{ color: "var(--text-muted)" }}>(Push Token)</span>
+                                <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">
+                                    API Key <span className="text-[var(--text-muted)]">(Push Token)</span>
                                 </label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         readOnly
                                         value={server.pushToken}
-                                        className="w-full rounded-lg px-3 py-1.5 text-xs font-mono outline-none"
-                                        style={{
-                                            backgroundColor: "var(--bg-input)",
-                                            border: "1px solid var(--border)",
-                                            color: "var(--text-muted)",
-                                        }}
+                                        className="w-full bg-white/5 border border-[var(--border-light)] rounded-lg px-3 py-1.5 text-xs font-mono outline-none text-[var(--text-muted)]"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => { navigator.clipboard.writeText(server.pushToken); }}
-                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
-                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
-                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0 border border-[var(--border-light)] bg-white/5 text-[var(--text-primary)] hover:bg-white/10"
                                         title="Copy API Key"
                                     >
                                         📋
@@ -275,32 +225,26 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                                         type="button"
                                         onClick={handleRegenerate}
                                         disabled={isSaving}
-                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0"
-                                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--warning)" }}
-                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
-                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                        className="px-2.5 py-1.5 text-xs rounded-lg cursor-pointer transition-colors shrink-0 border border-[var(--border-light)] bg-white/5 text-[var(--warning)] hover:bg-white/10"
                                         title="Regenerate API Key"
                                     >
                                         🔄
                                     </button>
                                 </div>
-                                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                                    Use as <code style={{ color: "var(--accent)" }}>X-API-Key</code> header or <code style={{ color: "var(--accent)" }}>X-Push-Token</code> header.
+                                <p className="text-xs mt-1 text-[var(--text-muted)]">
+                                    Use as <code className="text-[var(--accent)]">X-API-Key</code> header or <code className="text-[var(--accent)]">X-Push-Token</code> header.
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex justify-between pt-6 mt-2">
+                    <div className="flex justify-between mt-6">
                         {isEdit ? (
                             <button
                                 type="button"
                                 onClick={handleDelete}
                                 disabled={isSaving}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
-                                style={{ color: "var(--error)", backgroundColor: "rgba(239, 68, 68, 0.1)" }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.2)"}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)"}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors text-[var(--error)] bg-red-500/10 hover:bg-red-500/20"
                             >
                                 Delete
                             </button>
@@ -312,20 +256,14 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                                 type="button"
                                 onClick={onClose}
                                 disabled={isSaving}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors"
-                                style={{ color: "var(--text-primary)", backgroundColor: "var(--bg-secondary)" }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--border)"}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--bg-secondary)"}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors text-[var(--text-primary)] bg-white/5 hover:bg-white/10 border border-[var(--border-light)]"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:opacity-50"
-                                style={{ color: "#fff", backgroundColor: "var(--accent)" }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--accent-hover)"}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "var(--accent)"}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors disabled:opacity-50 text-white bg-indigo-500 hover:bg-indigo-400 shadow-lg shadow-indigo-500/30"
                             >
                                 {isSaving ? "Saving..." : "Save Server"}
                             </button>

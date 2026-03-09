@@ -12,6 +12,10 @@
   --color-brand-800: #3730a3;
   --color-brand-900: #312e81;
   --color-brand-950: #1e1b4b;
+
+  --font-outfit: "Outfit", system-ui, sans-serif;
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 /* ─── Design Tokens ────────────────────────────────────────────────────────── */
@@ -25,7 +29,7 @@
   --bg-input: rgba(15, 23, 42, 0.6);
 
   --border: rgba(51, 65, 85, 0.5);
-  --border-light: rgba(148, 163, 184, 0.1);
+  --border-light: rgba(255, 255, 255, 0.1);
   --border-focus: var(--color-brand-500);
 
   --text-primary: #f8fafc;
@@ -50,7 +54,6 @@
 
 [data-theme="light"] {
   --bg-base: #f8fafc;
-  /* slate-50 */
   --bg-primary: #ffffff;
   --bg-secondary: rgba(241, 245, 249, 0.6);
   --bg-card: rgba(255, 255, 255, 0.7);
@@ -58,18 +61,11 @@
   --bg-input: rgba(241, 245, 249, 0.8);
 
   --border: rgba(203, 213, 225, 0.8);
-  /* slate-300 */
-  --border-light: rgba(226, 232, 240, 0.8);
-  /* slate-200 */
+  --border-light: rgba(0, 0, 0, 0.05);
 
   --text-primary: #0f172a;
-  /* slate-900 */
   --text-secondary: #334155;
-  /* slate-700 */
   --text-muted: #64748b;
-  /* slate-500 */
-
-  /* Retain exact brand colors for accents/success/error */
 }
 
 /* ─── Base ─────────────────────────────────────────────────────────────────── */
@@ -80,7 +76,7 @@
 }
 
 html {
-  font-family: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter);
   background-color: var(--bg-base);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -89,18 +85,7 @@ html {
 
 body {
   min-height: 100vh;
-  /* Subtle mesh gradient background effect */
-  background-image:
-    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
-  background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-[data-theme="light"] body {
-  background-image:
-    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 50%);
 }
 
 /* ─── Utilities ────────────────────────────────────────────────────────────── */
@@ -132,6 +117,10 @@ body {
     text-shadow: 0 0 20px var(--accent-glow);
   }
 
+  .font-outfit {
+    font-family: var(--font-outfit);
+  }
+
   /* Sidebar navigation items */
   .sidebar-item {
     position: relative;
@@ -155,8 +144,29 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(90deg,
+        var(--bg-card) 25%,
+        var(--bg-card-hover) 50%,
+        var(--bg-card) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
   }
 }
 
@@ -167,15 +177,46 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-base);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-  border: 2px solid var(--bg-base);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Thin Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+[data-theme="light"] * {
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* ─── Ping Dot Animation ───────────────────────────────────────────────────── */
+@keyframes ping {
+
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }

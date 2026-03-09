@@ -17,9 +17,7 @@ interface Props {
 }
 
 function formatNumber(value: number): string {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-    return value.toFixed(1);
+    return Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function formatTime(isoString: string): string {
@@ -76,7 +74,7 @@ export default function OverviewTab({ serverId }: Props) {
         {
             label: "CPU Bucket",
             value: typeof data["cpu.bucket"] === "number" ? formatNumber(data["cpu.bucket"] as number) : "—",
-            sub: "/ 10,000",
+            sub: "/ 10K",
             color: "#06b6d4",
         },
         {
@@ -107,20 +105,52 @@ export default function OverviewTab({ serverId }: Props) {
         },
     ];
 
+    // Skeleton loading for KPIs
+    if (isLoading && !latest) {
+        return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="glass-panel rounded-xl p-4 flex flex-col justify-between h-20">
+                            <div className="h-3 w-16 skeleton rounded" />
+                            <div className="h-7 w-20 skeleton rounded mt-auto" />
+                        </div>
+                    ))}
+                </div>
+                <div className="glass-panel rounded-2xl h-[400px] skeleton" />
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            {/* Live indicator + Tick info */}
+            <div className="flex items-center justify-between">
+                {latest && (
+                    <div className="flex items-center gap-2 px-1">
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping-slow absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                        </span>
+                        <p className="text-xs text-[var(--text-muted)] font-medium tracking-wide">
+                            Tick <span className="text-[var(--text-primary)]">{latest.tick}</span> · Shard <span className="text-[var(--text-primary)]">{latest.shard}</span> · {new Date(latest.recordedAt).toLocaleString()}
+                        </p>
+                    </div>
+                )}
+            </div>
+
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {kpis.map((kpi) => (
                     <div
                         key={kpi.label}
-                        className="glass-panel-interactive rounded-2xl p-6 flex flex-col"
+                        className="glass-panel-interactive rounded-xl p-4 flex flex-col justify-between"
                     >
-                        <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">
+                        <p className="text-sm opacity-70 text-[var(--text-muted)]">
                             {kpi.label}
                         </p>
-                        <p className="text-3xl font-bold tracking-tight mt-auto" style={{ color: kpi.color, textShadow: `0 0 20px ${kpi.color}40` }}>
-                            {isLoading ? "..." : kpi.value}
+                        <p className="text-2xl font-outfit font-bold tracking-tight mt-auto" style={{ color: kpi.color, textShadow: `0 0 20px ${kpi.color}40` }}>
+                            {kpi.value}
                             {kpi.sub && (
                                 <span className="text-sm font-medium ml-1.5 opacity-70">
                                     {kpi.sub}
@@ -131,18 +161,8 @@ export default function OverviewTab({ serverId }: Props) {
                 ))}
             </div>
 
-            {/* Tick info */}
-            {latest && (
-                <div className="flex items-center gap-2 px-1">
-                    <div className="w-2 h-2 rounded-full bg-[var(--success)] shadow-[0_0_8px_var(--success)] animate-pulse"></div>
-                    <p className="text-xs text-[var(--text-muted)] font-medium tracking-wide">
-                        Tick <span className="text-[var(--text-primary)]">{latest.tick}</span> · Shard <span className="text-[var(--text-primary)]">{latest.shard}</span> · {new Date(latest.recordedAt).toLocaleString()}
-                    </p>
-                </div>
-            )}
-
             {/* CPU Time-Series Chart */}
-            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
                 {/* Subtle top border highlight */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 

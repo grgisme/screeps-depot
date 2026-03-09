@@ -8,7 +8,7 @@ function AppContent() {
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-pulse text-[var(--text-secondary)] text-lg">
+                <div className="animate-pulse text-[var(--text-secondary)] text-lg font-outfit font-semibold">
                     Loading...
                 </div>
             </div>
@@ -21,7 +21,14 @@ function AppContent() {
 export default function App() {
     return (
         <AuthProvider>
-            <AppContent />
+            {/* Ambient background blurred gradients */}
+            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+                <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-indigo-500/20 blur-[100px]" />
+                <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-violet-500/20 blur-[100px]" />
+            </div>
+            <div className="relative z-10">
+                <AppContent />
+            </div>
         </AuthProvider>
     );
 }

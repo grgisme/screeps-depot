@@ -17,9 +17,7 @@ interface Props {
 }
 
 function formatNumber(value: number): string {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-    return value.toFixed(0);
+    return Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 function formatTime(isoString: string): string {
@@ -55,26 +53,39 @@ export default function MarketTab({ serverId }: Props) {
 
     const data = latest?.data ?? {};
 
+    if (isLoading && !latest) {
+        return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="glass-panel rounded-xl p-4 h-20 skeleton" />
+                    ))}
+                </div>
+                <div className="glass-panel rounded-2xl h-[340px] skeleton" />
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 gap-6">
-                <div className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
-                    <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Credits</p>
-                    <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--success)", textShadow: "0 0 20px rgba(34, 197, 94, 0.4)" }}>
-                        {isLoading ? "..." : typeof data["market.credits"] === "number" ? formatNumber(data["market.credits"] as number) : "—"}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="glass-panel-interactive rounded-xl p-4 flex flex-col">
+                    <p className="text-sm opacity-70 text-[var(--text-muted)]">Credits</p>
+                    <p className="text-2xl font-outfit font-bold tracking-tight mt-auto" style={{ color: "var(--success)", textShadow: "0 0 20px rgba(34, 197, 94, 0.4)" }}>
+                        {typeof data["market.credits"] === "number" ? formatNumber(data["market.credits"] as number) : "—"}
                     </p>
                 </div>
-                <div className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
-                    <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Active Orders</p>
-                    <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--warning)", textShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>
-                        {isLoading ? "..." : typeof data["market.activeOrders"] === "number" ? String(data["market.activeOrders"]) : "—"}
+                <div className="glass-panel-interactive rounded-xl p-4 flex flex-col">
+                    <p className="text-sm opacity-70 text-[var(--text-muted)]">Active Orders</p>
+                    <p className="text-2xl font-outfit font-bold tracking-tight mt-auto" style={{ color: "var(--warning)", textShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>
+                        {typeof data["market.activeOrders"] === "number" ? String(data["market.activeOrders"]) : "—"}
                     </p>
                 </div>
             </div>
 
             {/* Credits Chart */}
-            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 
                 <div className="flex items-center justify-between mb-6 relative z-10">

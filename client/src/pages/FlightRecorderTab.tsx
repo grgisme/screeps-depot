@@ -48,57 +48,51 @@ export default function FlightRecorderTab({ serverId }: Props) {
     useAutoRefresh(load);
 
     return (
-        <div className="space-y-8">
-            {/* Summary cards */}
+        <div className="space-y-6">
+            {/* Summary cards — compact 3-col grid */}
             {summary && (
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-6">
+                <div className="grid grid-cols-3 gap-2">
                     {(["I", "W", "E"] as const).map((s) => {
                         const style = SEVERITY_STYLES[s];
                         return (
-                            <div key={`hour-${s}`} className="glass-panel-interactive rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group">
+                            <div key={`combined-${s}`} className="glass-panel rounded-xl p-3 flex items-center gap-4 relative overflow-hidden group">
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
-                                <p className="text-[10px] sm:text-xs mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (1h)</p>
-                                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 15px ${style.text}40` }}>{summary.lastHour[s] ?? 0}</p>
-                            </div>
-                        );
-                    })}
-                    {(["I", "W", "E"] as const).map((s) => {
-                        const style = SEVERITY_STYLES[s];
-                        return (
-                            <div key={`day-${s}`} className="glass-panel-interactive rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group">
-                                <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
-                                <p className="text-[10px] sm:text-xs mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (24h)</p>
-                                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 15px ${style.text}40` }}>{summary.lastDay[s] ?? 0}</p>
+                                <div className="z-10 flex-1 text-center">
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">{style.label} 1h</p>
+                                    <p className="text-xl font-outfit font-bold" style={{ color: style.text }}>{summary.lastHour[s] ?? 0}</p>
+                                </div>
+                                <div className="z-10 w-px h-8 bg-[var(--border-light)]" />
+                                <div className="z-10 flex-1 text-center">
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">{style.label} 24h</p>
+                                    <p className="text-xl font-outfit font-bold" style={{ color: style.text }}>{summary.lastDay[s] ?? 0}</p>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="glass-panel p-4 rounded-xl flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] ml-1">Filter:</span>
-                <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-light)] shadow-inner">
-                    {["", "I", "W", "E"].map((s) => {
-                        const isActive = severity === s;
-                        const style = s ? SEVERITY_STYLES[s] : { text: "var(--accent)" };
-                        return (
-                            <button key={s} onClick={() => { setSeverity(s); setPage(1); }}
-                                className={`rounded-md px-3 py-1.5 text-xs font-bold cursor-pointer transition-all ${isActive
-                                    ? `text-white shadow-md`
-                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
-                                    }`}
-                                style={isActive ? { backgroundColor: style.text, boxShadow: `0 4px 12px ${style.text}40` } : {}}
-                            >
-                                {s ? SEVERITY_STYLES[s].label : "ALL"}
-                            </button>
-                        );
-                    })}
-                </div>
+            {/* Filter bar — toggle pills */}
+            <div className="flex gap-2">
+                {["", "I", "W", "E"].map((s) => {
+                    const isActive = severity === s;
+                    const style = s ? SEVERITY_STYLES[s] : { text: "var(--accent)" };
+                    return (
+                        <button key={s} onClick={() => { setSeverity(s); setPage(1); }}
+                            className={`px-4 py-1.5 rounded-full border text-sm cursor-pointer transition-all font-medium ${isActive
+                                ? "text-white border-transparent shadow-md"
+                                : "border-[var(--border-light)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5"
+                                }`}
+                            style={isActive ? { backgroundColor: style.text, boxShadow: `0 4px 12px ${style.text}40` } : {}}
+                        >
+                            {s ? SEVERITY_STYLES[s].label : "ALL"}
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Event list */}
-            <div className="glass-panel rounded-2xl overflow-hidden flex flex-col relative border border-[var(--border-light)]">
+            {/* Event list — dense continuous list */}
+            <div className="glass-panel rounded-2xl overflow-hidden relative border border-[var(--border-light)]">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 
                 {isLoading ? (
@@ -108,38 +102,38 @@ export default function FlightRecorderTab({ serverId }: Props) {
                         No flight recorder entries. Make sure your bot uses FlightRecorder and segments 98/99 are active.
                     </div>
                 ) : (
-                    <div className="divide-y divide-[var(--border-light)]">
-                        {data.entries.map((entry) => {
+                    <div>
+                        {data.entries.map((entry, idx) => {
                             const style = SEVERITY_STYLES[entry.severity] ?? SEVERITY_STYLES.I;
                             const isExpanded = expandedId === entry.id;
                             return (
                                 <div
                                     key={entry.id}
-                                    className="cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]/30 group"
+                                    className={`cursor-pointer transition-colors hover:bg-white/5 ${idx % 2 === 0 ? "" : "bg-white/[0.02]"}`}
                                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                                 >
-                                    <div className="flex items-start gap-5 p-5">
-                                        <span className="text-[10px] font-black tracking-wider px-2 py-1 rounded-md mt-0.5 shrink-0 uppercase shadow-sm border transition-colors"
-                                            style={{ backgroundColor: `${style.text}15`, color: style.text, borderColor: `${style.text}30` }}>
+                                    <div className="flex items-start gap-4 py-2 px-3">
+                                        <span
+                                            className="w-16 text-center text-xs font-bold rounded py-0.5 shrink-0 mt-0.5 uppercase"
+                                            style={{ backgroundColor: `${style.text}15`, color: style.text }}
+                                        >
                                             {style.label}
                                         </span>
+                                        <span className="text-xs opacity-50 w-32 shrink-0 font-mono pt-0.5">
+                                            {(() => { const d = new Date(entry.recordedAt); const mm = String(d.getMonth() + 1).padStart(2, "0"); const dd = String(d.getDate()).padStart(2, "0"); let h = d.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${mm}/${dd} ${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`; })()}
+                                        </span>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded shadow-sm border border-[var(--border-light)]" style={{ backgroundColor: "#030712", color: "var(--accent)" }}>{entry.context}</span>
-                                                {entry.room && <span className="text-[10px] sm:text-xs font-mono font-medium" style={{ color: "var(--text-muted)" }}>🏠 {entry.room}</span>}
-                                                <div className="flex-1"></div>
-                                                <span className="text-[10px] sm:text-xs font-mono shrink-0 bg-[#030712]/50 px-2 py-1 rounded border border-[var(--border-light)] flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-                                                    <span>{(() => { const d = new Date(entry.recordedAt); const mm = String(d.getMonth() + 1).padStart(2, "0"); const dd = String(d.getDate()).padStart(2, "0"); let h = d.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${mm}/${dd} ${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`; })()}</span>
-                                                    <span className="opacity-50">•</span>
-                                                    <span className="text-[var(--text-secondary)]">T{entry.tick}</span>
-                                                </span>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-[var(--border-light)] bg-[var(--bg-primary)]" style={{ color: "var(--accent)" }}>{entry.context}</span>
+                                                {entry.room && <span className="text-[10px] font-mono text-[var(--text-muted)]">🏠 {entry.room}</span>}
+                                                <span className="text-[10px] font-mono text-[var(--text-muted)] ml-auto shrink-0">T{entry.tick}</span>
                                             </div>
-                                            <p className="text-sm mt-2 break-words leading-relaxed text-[var(--text-primary)] group-hover:text-white transition-colors">{entry.message}</p>
+                                            <p className="font-mono text-sm break-all text-[var(--text-primary)]">{entry.message}</p>
                                         </div>
                                     </div>
                                     {isExpanded && entry.stackTrace && (
-                                        <div className="px-5 pb-5 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <pre className="text-[11px] p-4 rounded-lg font-mono overflow-x-auto whitespace-pre-wrap border border-red-500/20 bg-red-500/5" style={{ color: "#f87171" }}>
+                                        <div className="px-3 pb-3 pt-1">
+                                            <pre className="text-xs p-3 rounded-md font-mono overflow-x-auto whitespace-pre-wrap bg-black/30 text-red-400 border border-red-500/20 mt-2">
                                                 {entry.stackTrace}
                                             </pre>
                                         </div>

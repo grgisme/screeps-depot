@@ -95,7 +95,7 @@ export default function Dashboard() {
 
     function handleNavClick(tabId: string) {
         setActiveTab(tabId);
-        setSidebarOpen(false); // close on mobile after selection
+        setSidebarOpen(false);
     }
 
     function renderActiveTab() {
@@ -123,11 +123,11 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen w-full bg-[var(--bg-base)] text-[var(--text-primary)] overflow-hidden">
             {/* ── Mobile overlay ── */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -135,16 +135,16 @@ export default function Dashboard() {
             {/* ── Sidebar ── */}
             <aside
                 className={`
-                    sidebar fixed md:sticky top-0 left-0 z-50 h-screen flex flex-col
-                    w-[260px] shrink-0
+                    fixed md:sticky top-0 left-0 z-50 h-screen flex flex-col
+                    w-64 shrink-0
                     glass-panel border-t-0 border-l-0 border-b-0 rounded-none border-r border-[var(--border-light)]
                     transition-transform duration-300 ease-in-out
                     ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
                 `}
             >
                 {/* Brand */}
-                <div className="px-6 pt-6 pb-4">
-                    <h1 className="text-lg font-bold tracking-tight text-glow flex items-center gap-2">
+                <div className="px-4 pt-6 pb-4 mb-6">
+                    <h1 className="text-lg font-outfit font-bold tracking-tight text-glow flex items-center gap-2">
                         <span className="text-[var(--accent)]">✨</span>
                         <span style={{ color: "var(--text-primary)" }}>Screeps Depot</span>
                     </h1>
@@ -174,11 +174,11 @@ export default function Dashboard() {
                                 key={item.id}
                                 onClick={() => handleNavClick(item.id)}
                                 className={`
-                                    sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                                    sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
                                     cursor-pointer transition-all duration-200
                                     ${isActive
-                                        ? "sidebar-item-active bg-[var(--accent)]/15 text-[var(--text-primary)] border border-[var(--accent)]/25 shadow-[0_0_12px_var(--accent-glow)]"
-                                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] border border-transparent"
+                                        ? "sidebar-item-active bg-indigo-500/10 text-indigo-400 font-medium"
+                                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 border border-transparent"
                                     }
                                 `}
                             >
@@ -219,7 +219,7 @@ export default function Dashboard() {
                                 }
                             }}
                             disabled={isPolling}
-                            className="sidebar-item w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all text-[var(--accent)] hover:bg-[var(--bg-card-hover)] border border-transparent disabled:opacity-50"
+                            className="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all text-[var(--accent)] hover:bg-white/5 border border-transparent disabled:opacity-50"
                         >
                             <span className="text-base">{isPolling ? "📡" : "📡"}</span>
                             <span>{isPolling ? "Polling..." : "Poll Now"}</span>
@@ -229,7 +229,7 @@ export default function Dashboard() {
                     {activeServer && (
                         <button
                             onClick={() => openEditModal(activeServer)}
-                            className="sidebar-item w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] border border-transparent"
+                            className="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 border border-transparent"
                             title="Server Settings"
                         >
                             <span className="text-base">⚙️</span>
@@ -239,7 +239,7 @@ export default function Dashboard() {
 
                     <button
                         onClick={toggleTheme}
-                        className="sidebar-item w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)] border border-transparent"
+                        className="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 border border-transparent"
                         title="Toggle Theme"
                     >
                         <span className="text-base">{theme === "light" ? "🌙" : "☀️"}</span>
@@ -249,7 +249,7 @@ export default function Dashboard() {
                     <button
                         id="logout-btn"
                         onClick={logout}
-                        className="sidebar-item w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-[var(--bg-card-hover)] border border-transparent"
+                        className="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-white/5 border border-transparent"
                     >
                         <span className="text-base">🚪</span>
                         <span>Logout</span>
@@ -258,12 +258,12 @@ export default function Dashboard() {
             </aside>
 
             {/* ── Main Content ── */}
-            <main className="flex-1 overflow-y-auto min-h-screen">
+            <main className="flex-1 flex flex-col h-full overflow-y-auto">
                 {/* Mobile header with hamburger */}
                 <div className="sticky top-0 z-30 md:hidden glass-panel border-x-0 border-t-0 rounded-none border-b border-[var(--border-light)] px-4 py-3 flex items-center gap-3">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] cursor-pointer transition-colors"
+                        className="p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
                         aria-label="Open menu"
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-primary)" }}>
@@ -272,51 +272,36 @@ export default function Dashboard() {
                             <line x1="3" y1="18" x2="21" y2="18" />
                         </svg>
                     </button>
-                    <h1 className="text-base font-bold text-glow flex items-center gap-2">
+                    <h1 className="text-base font-outfit font-bold text-glow flex items-center gap-2">
                         <span className="text-[var(--accent)]">✨</span>
                         <span style={{ color: "var(--text-primary)" }}>Screeps Depot</span>
                     </h1>
                 </div>
 
-                <div className="p-6 md:p-10 max-w-[1200px] mx-auto">
+                <div className="p-4 md:p-8 flex-1">
                     {isLoadingServers ? (
-                        <div className="flex items-center justify-center py-20">
-                            <div
-                                className="animate-pulse text-lg"
-                                style={{ color: "var(--text-secondary)" }}
-                            >
-                                Loading servers...
+                        /* Skeleton loading state */
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="glass-panel rounded-2xl p-6 h-24 skeleton" />
+                                ))}
                             </div>
+                            <div className="glass-panel rounded-2xl h-[400px] skeleton" />
                         </div>
                     ) : servers.length === 0 ? (
                         <div
-                            className="rounded-xl p-12 text-center"
-                            style={{
-                                backgroundColor: "var(--bg-card)",
-                                border: "1px solid var(--border)",
-                            }}
+                            className="glass-panel rounded-2xl p-12 text-center"
                         >
-                            <p
-                                className="text-lg mb-2"
-                                style={{ color: "var(--text-primary)" }}
-                            >
+                            <p className="text-lg font-outfit font-bold mb-2 text-[var(--text-primary)]">
                                 No Screeps servers configured
                             </p>
-                            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+                            <p className="text-sm mb-6 text-[var(--text-muted)]">
                                 Start tracking your stats and logs by adding a Screeps server.
                             </p>
                             <button
                                 onClick={openCreateModal}
-                                className="px-6 py-3 rounded-xl font-medium transition-all cursor-pointer shadow-lg shadow-[var(--accent-glow)]"
-                                style={{ backgroundColor: "var(--accent)", color: "#fff" }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = "var(--accent-hover)";
-                                    e.currentTarget.style.transform = "translateY(-2px)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = "var(--accent)";
-                                    e.currentTarget.style.transform = "translateY(0)";
-                                }}
+                                className="px-6 py-3 rounded-xl font-medium transition-all cursor-pointer shadow-lg shadow-[var(--accent-glow)] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:-translate-y-0.5"
                             >
                                 <span className="mr-2">✨</span> Add Your First Server
                             </button>

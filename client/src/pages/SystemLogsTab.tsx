@@ -37,25 +37,28 @@ export default function SystemLogsTab({ serverId }: Props) {
 
     return (
         <div className="space-y-6">
-            {/* Filters */}
-            <div className="glass-panel p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] ml-1">Severity:</span>
-                    <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-light)] shadow-inner">
-                        {["", "INFO", "WARN", "ERROR"].map((s) => (
+            {/* Filter bar — toggle pills */}
+            <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Severity:</span>
+                <div className="flex gap-2">
+                    {["", "INFO", "WARN", "ERROR"].map((s) => {
+                        const isActive = severity === s;
+                        const color = s ? SEVERITY_COLORS[s] : "var(--accent)";
+                        return (
                             <button key={s} onClick={() => setSeverity(s)}
-                                className={`rounded-md px-3 py-1.5 text-xs font-bold cursor-pointer transition-all ${severity === s
-                                    ? (s ? `bg-[${SEVERITY_COLORS[s]}] text-white shadow-md shadow-[${SEVERITY_COLORS[s]}40]` : "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]")
-                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                className={`px-4 py-1.5 rounded-full border text-sm cursor-pointer transition-all font-medium ${isActive
+                                    ? "text-white border-transparent shadow-md"
+                                    : "border-[var(--border-light)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5"
                                     }`}
-                                style={severity === s && s ? { backgroundColor: SEVERITY_COLORS[s], boxShadow: `0 4px 12px ${SEVERITY_COLORS[s]}40` } : {}}
+                                style={isActive ? { backgroundColor: color, boxShadow: s ? `0 4px 12px ${SEVERITY_COLORS[s]}40` : undefined } : {}}
                             >
                                 {s || "ALL"}
                             </button>
-                        ))}
-                    </div>
+                        );
+                    })}
                 </div>
-                <button onClick={load} className="glass-panel-interactive px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--text-primary)] hover:text-[var(--accent)] flex items-center gap-1">
+                <div className="flex-1" />
+                <button onClick={load} className="glass-panel-interactive px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--text-primary)] hover:text-[var(--accent)] flex items-center gap-1 cursor-pointer">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -63,8 +66,8 @@ export default function SystemLogsTab({ serverId }: Props) {
                 </button>
             </div>
 
-            {/* Log entries */}
-            <div className="glass-panel rounded-2xl overflow-hidden flex flex-col relative border border-[var(--border-light)]">
+            {/* Log entries — dense list */}
+            <div className="glass-panel rounded-2xl overflow-hidden relative border border-[var(--border-light)]">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 
                 {isLoading ? (
@@ -72,21 +75,22 @@ export default function SystemLogsTab({ serverId }: Props) {
                 ) : logs.length === 0 ? (
                     <div className="p-12 text-center text-[var(--text-muted)] text-sm">No system logs found for this filter.</div>
                 ) : (
-                    <div className="divide-y divide-[var(--border-light)]">
-                        {logs.map((log) => (
-                            <div key={log.id} className="flex items-start gap-5 p-5 hover:bg-[var(--bg-card-hover)]/30 transition-colors group">
-                                <span className="text-[10px] font-black tracking-wider px-2 py-1 rounded-md mt-0.5 shrink-0 uppercase shadow-sm border"
+                    <div>
+                        {logs.map((log, idx) => (
+                            <div key={log.id} className={`flex items-start gap-4 py-2 px-3 transition-colors hover:bg-white/5 ${idx % 2 === 0 ? "" : "bg-white/[0.02]"}`}>
+                                <span
+                                    className="w-16 text-center text-xs font-bold rounded py-0.5 shrink-0 mt-0.5 uppercase"
                                     style={{
                                         backgroundColor: `${SEVERITY_COLORS[log.severity] ?? "#6366f1"}15`,
                                         color: SEVERITY_COLORS[log.severity] ?? "#6366f1",
-                                        borderColor: `${SEVERITY_COLORS[log.severity] ?? "#6366f1"}30`
-                                    }}>
+                                    }}
+                                >
                                     {log.severity}
                                 </span>
-                                <p className="text-sm flex-1 break-words leading-relaxed text-[var(--text-primary)] group-hover:text-white transition-colors">{log.message}</p>
-                                <span className="text-xs shrink-0 font-mono text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors bg-[#030712]/50 px-2 py-1 rounded border border-[var(--border-light)]">
+                                <span className="text-xs opacity-50 w-32 shrink-0 font-mono pt-0.5">
                                     {new Date(log.timestamp).toLocaleTimeString()}
                                 </span>
+                                <p className="font-mono text-sm flex-1 break-all text-[var(--text-primary)]">{log.message}</p>
                             </div>
                         ))}
                     </div>
