@@ -68,12 +68,7 @@
   --text-muted: #64748b;
 }
 
-/* ─── Base ─────────────────────────────────────────────────────────────────── */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Tailwind v4 includes its own preflight — no manual reset needed */
 
 html {
   font-family: var(--font-inter);
@@ -198,12 +193,12 @@ body {
 }
 
 /* Thin Firefox scrollbar */
-* {
+html {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-[data-theme="light"] * {
+[data-theme="light"] {
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
 
