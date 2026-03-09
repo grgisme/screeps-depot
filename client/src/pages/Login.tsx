@@ -37,7 +37,7 @@ export default function Login() {
             <div className="absolute w-[600px] h-[600px] bg-[var(--accent)]/10 rounded-full blur-[120px] -top-32 -left-32 pointer-events-none mix-blend-screen"></div>
             <div className="absolute w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] bottom-0 right-0 pointer-events-none mix-blend-screen"></div>
 
-            <div className="w-full max-w-md rounded-2xl p-8 glass-panel relative z-10 shadow-2xl shadow-[var(--bg-base)]">
+            <div className="w-full max-w-md rounded-2xl p-10 glass-panel relative z-10 shadow-2xl shadow-[var(--bg-base)]">
                 {/* Subtle top border highlight */}
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60"></div>
 
@@ -66,9 +66,9 @@ export default function Login() {
                 )}
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
+                        <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
                             Username
                         </label>
                         <input
@@ -83,7 +83,7 @@ export default function Login() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium mb-1.5 text-[var(--text-secondary)]">
+                        <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
                             Password
                         </label>
                         <input

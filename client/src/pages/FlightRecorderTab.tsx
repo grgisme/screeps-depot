@@ -48,14 +48,14 @@ export default function FlightRecorderTab({ serverId }: Props) {
     useAutoRefresh(load);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Summary cards */}
             {summary && (
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-6">
                     {(["I", "W", "E"] as const).map((s) => {
                         const style = SEVERITY_STYLES[s];
                         return (
-                            <div key={`hour-${s}`} className="glass-panel-interactive rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
+                            <div key={`hour-${s}`} className="glass-panel-interactive rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group">
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
                                 <p className="text-[10px] sm:text-xs mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (1h)</p>
                                 <p className="text-2xl sm:text-3xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 15px ${style.text}40` }}>{summary.lastHour[s] ?? 0}</p>
@@ -65,7 +65,7 @@ export default function FlightRecorderTab({ serverId }: Props) {
                     {(["I", "W", "E"] as const).map((s) => {
                         const style = SEVERITY_STYLES[s];
                         return (
-                            <div key={`day-${s}`} className="glass-panel-interactive rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
+                            <div key={`day-${s}`} className="glass-panel-interactive rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden group">
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
                                 <p className="text-[10px] sm:text-xs mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (24h)</p>
                                 <p className="text-2xl sm:text-3xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 15px ${style.text}40` }}>{summary.lastDay[s] ?? 0}</p>
@@ -76,7 +76,7 @@ export default function FlightRecorderTab({ serverId }: Props) {
             )}
 
             {/* Filters */}
-            <div className="glass-panel p-3 rounded-xl flex items-center gap-3">
+            <div className="glass-panel p-4 rounded-xl flex items-center gap-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] ml-1">Filter:</span>
                 <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-light)] shadow-inner">
                     {["", "I", "W", "E"].map((s) => {
@@ -85,8 +85,8 @@ export default function FlightRecorderTab({ serverId }: Props) {
                         return (
                             <button key={s} onClick={() => { setSeverity(s); setPage(1); }}
                                 className={`rounded-md px-3 py-1.5 text-xs font-bold cursor-pointer transition-all ${isActive
-                                        ? `text-white shadow-md`
-                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    ? `text-white shadow-md`
+                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                                     }`}
                                 style={isActive ? { backgroundColor: style.text, boxShadow: `0 4px 12px ${style.text}40` } : {}}
                             >
@@ -118,7 +118,7 @@ export default function FlightRecorderTab({ serverId }: Props) {
                                     className="cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]/30 group"
                                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                                 >
-                                    <div className="flex items-start gap-4 p-4">
+                                    <div className="flex items-start gap-5 p-5">
                                         <span className="text-[10px] font-black tracking-wider px-2 py-1 rounded-md mt-0.5 shrink-0 uppercase shadow-sm border transition-colors"
                                             style={{ backgroundColor: `${style.text}15`, color: style.text, borderColor: `${style.text}30` }}>
                                             {style.label}
@@ -138,8 +138,8 @@ export default function FlightRecorderTab({ serverId }: Props) {
                                         </div>
                                     </div>
                                     {isExpanded && entry.stackTrace && (
-                                        <div className="px-4 pb-4 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <pre className="text-[11px] p-3 rounded-lg font-mono overflow-x-auto whitespace-pre-wrap border border-red-500/20 bg-red-500/5" style={{ color: "#f87171" }}>
+                                        <div className="px-5 pb-5 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <pre className="text-[11px] p-4 rounded-lg font-mono overflow-x-auto whitespace-pre-wrap border border-red-500/20 bg-red-500/5" style={{ color: "#f87171" }}>
                                                 {entry.stackTrace}
                                             </pre>
                                         </div>

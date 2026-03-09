@@ -36,17 +36,17 @@ export default function SystemLogsTab({ serverId }: Props) {
     useAutoRefresh(load);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* Filters */}
-            <div className="glass-panel p-3 rounded-xl flex items-center justify-between">
+            <div className="glass-panel p-4 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] ml-1">Severity:</span>
                     <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-light)] shadow-inner">
                         {["", "INFO", "WARN", "ERROR"].map((s) => (
                             <button key={s} onClick={() => setSeverity(s)}
                                 className={`rounded-md px-3 py-1.5 text-xs font-bold cursor-pointer transition-all ${severity === s
-                                        ? (s ? `bg-[${SEVERITY_COLORS[s]}] text-white shadow-md shadow-[${SEVERITY_COLORS[s]}40]` : "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]")
-                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    ? (s ? `bg-[${SEVERITY_COLORS[s]}] text-white shadow-md shadow-[${SEVERITY_COLORS[s]}40]` : "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]")
+                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                                     }`}
                                 style={severity === s && s ? { backgroundColor: SEVERITY_COLORS[s], boxShadow: `0 4px 12px ${SEVERITY_COLORS[s]}40` } : {}}
                             >
@@ -74,7 +74,7 @@ export default function SystemLogsTab({ serverId }: Props) {
                 ) : (
                     <div className="divide-y divide-[var(--border-light)]">
                         {logs.map((log) => (
-                            <div key={log.id} className="flex items-start gap-4 p-4 hover:bg-[var(--bg-card-hover)]/30 transition-colors group">
+                            <div key={log.id} className="flex items-start gap-5 p-5 hover:bg-[var(--bg-card-hover)]/30 transition-colors group">
                                 <span className="text-[10px] font-black tracking-wider px-2 py-1 rounded-md mt-0.5 shrink-0 uppercase shadow-sm border"
                                     style={{
                                         backgroundColor: `${SEVERITY_COLORS[log.severity] ?? "#6366f1"}15`,

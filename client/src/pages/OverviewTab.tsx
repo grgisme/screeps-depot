@@ -108,13 +108,13 @@ export default function OverviewTab({ serverId }: Props) {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                 {kpis.map((kpi) => (
                     <div
                         key={kpi.label}
-                        className="glass-panel-interactive rounded-2xl p-5 flex flex-col"
+                        className="glass-panel-interactive rounded-2xl p-6 flex flex-col"
                     >
                         <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">
                             {kpi.label}
@@ -142,7 +142,7 @@ export default function OverviewTab({ serverId }: Props) {
             )}
 
             {/* CPU Time-Series Chart */}
-            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                 {/* Subtle top border highlight */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 
@@ -156,8 +156,8 @@ export default function OverviewTab({ serverId }: Props) {
                                 key={h}
                                 onClick={() => setHours(h)}
                                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${hours === h
-                                        ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]"
-                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]"
+                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                                     }`}
                             >
                                 {h < 24 ? `${h}h` : `${h / 24}d`}

@@ -84,15 +84,15 @@ export default function PerformanceTab({ serverId }: Props) {
     functionMetrics.sort((a, b) => b.cpu - a.cpu);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* System Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {systemMetrics.map((m) => {
                     let displayVal = Number(m.value);
                     if (m.divisor) displayVal /= m.divisor;
                     if (m.multiplier) displayVal *= m.multiplier;
                     return (
-                        <div key={m.label} className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                        <div key={m.label} className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
                             <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">{m.label}</p>
                             <p className="text-2xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--text-primary)" }}>
                                 {isLoading ? "..." : `${displayVal.toFixed(m.unit === "%" ? 0 : 1)} `}
@@ -104,7 +104,7 @@ export default function PerformanceTab({ serverId }: Props) {
             </div>
 
             {/* Process CPU Chart */}
-            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
                 <div className="flex items-center justify-between mb-6 relative z-10">
                     <h3 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function PerformanceTab({ serverId }: Props) {
 
             {/* Function Profiler Table */}
             {functionMetrics.length > 0 && (
-                <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
                     <h3 className="text-base font-semibold mb-5 text-[var(--text-primary)] flex items-center gap-2 relative z-10">
                         <span className="text-[var(--accent)]">🔬</span> Function Profiler (Latest Tick)

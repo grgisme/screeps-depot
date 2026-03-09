@@ -56,16 +56,16 @@ export default function MarketTab({ serverId }: Props) {
     const data = latest?.data ?? {};
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+            <div className="grid grid-cols-2 gap-6">
+                <div className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
                     <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Credits</p>
                     <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--success)", textShadow: "0 0 20px rgba(34, 197, 94, 0.4)" }}>
                         {isLoading ? "..." : typeof data["market.credits"] === "number" ? formatNumber(data["market.credits"] as number) : "—"}
                     </p>
                 </div>
-                <div className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                <div className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
                     <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">Active Orders</p>
                     <p className="text-3xl font-bold tracking-tight mt-auto text-glow" style={{ color: "var(--warning)", textShadow: "0 0 20px rgba(245, 158, 11, 0.4)" }}>
                         {isLoading ? "..." : typeof data["market.activeOrders"] === "number" ? String(data["market.activeOrders"]) : "—"}
@@ -74,7 +74,7 @@ export default function MarketTab({ serverId }: Props) {
             </div>
 
             {/* Credits Chart */}
-            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
 
                 <div className="flex items-center justify-between mb-6 relative z-10">

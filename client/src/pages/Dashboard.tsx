@@ -192,7 +192,7 @@ export default function Dashboard() {
             </header>
 
             {/* Main Content */}
-            <main style={{ maxWidth: "1152px", marginLeft: "auto", marginRight: "auto", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "1.5rem", paddingBottom: "1.5rem" }}>
+            <main style={{ maxWidth: "1152px", marginLeft: "auto", marginRight: "auto", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "3rem", paddingBottom: "4rem" }}>
                 {isLoadingServers ? (
                     <div className="flex items-center justify-center py-20">
                         <div

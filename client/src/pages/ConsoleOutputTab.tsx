@@ -50,14 +50,14 @@ export default function ConsoleOutputTab({ serverId }: Props) {
     useAutoRefresh(load);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Summary cards */}
             {summary && (
-                <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+                <div className="grid grid-cols-5 md:grid-cols-10 gap-4">
                     {(["T", "D", "I", "W", "E"] as const).map((s) => {
                         const style = SEVERITY_STYLES[s];
                         return (
-                            <div key={`hour-${s}`} className="glass-panel-interactive rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                            <div key={`hour-${s}`} className="glass-panel-interactive rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
                                 <p className="text-[10px] mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (1h)</p>
                                 <p className="text-xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 10px ${style.text}40` }}>{summary.lastHour[s] ?? 0}</p>
@@ -67,7 +67,7 @@ export default function ConsoleOutputTab({ serverId }: Props) {
                     {(["T", "D", "I", "W", "E"] as const).map((s) => {
                         const style = SEVERITY_STYLES[s];
                         return (
-                            <div key={`day-${s}`} className="glass-panel-interactive rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                            <div key={`day-${s}`} className="glass-panel-interactive rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-300" style={{ backgroundColor: style.text }}></div>
                                 <p className="text-[10px] mb-1 uppercase tracking-wider font-semibold z-10" style={{ color: "var(--text-muted)" }}>{style.label} (24h)</p>
                                 <p className="text-xl font-bold tracking-tight text-glow z-10" style={{ color: style.text, textShadow: `0 0 10px ${style.text}40` }}>{summary.lastDay[s] ?? 0}</p>
@@ -78,7 +78,7 @@ export default function ConsoleOutputTab({ serverId }: Props) {
             )}
 
             {/* Filters */}
-            <div className="glass-panel p-3 rounded-xl flex flex-wrap items-center gap-3">
+            <div className="glass-panel p-4 rounded-xl flex flex-wrap items-center gap-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] ml-1">Filter:</span>
                 <div className="flex flex-wrap gap-1 bg-[var(--bg-input)] p-1 rounded-lg border border-[var(--border-light)] shadow-inner">
                     {["", "T", "D", "I", "W", "E"].map((s) => {
@@ -87,8 +87,8 @@ export default function ConsoleOutputTab({ serverId }: Props) {
                         return (
                             <button key={s} onClick={() => { setSeverity(s); setPage(1); }}
                                 className={`rounded-md px-3 py-1.5 text-xs font-bold cursor-pointer transition-all ${isActive
-                                        ? `text-white shadow-md`
-                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    ? `text-white shadow-md`
+                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                                     }`}
                                 style={isActive ? { backgroundColor: style.text, boxShadow: `0 4px 12px ${style.text}40` } : {}}
                             >
@@ -120,13 +120,13 @@ export default function ConsoleOutputTab({ serverId }: Props) {
                                     className="cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]/30 group"
                                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                                 >
-                                    <div className="flex items-start gap-4 p-3">
+                                    <div className="flex items-start gap-4 p-4 text-sm">
                                         <span className="text-[10px] font-black tracking-wider px-2 py-1 rounded-md mt-0.5 shrink-0 uppercase shadow-sm border transition-colors"
                                             style={{ backgroundColor: `${style.text}15`, color: style.text, borderColor: `${style.text}30` }}>
                                             {style.label}
                                         </span>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
                                                 <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded shadow-sm border border-[var(--border-light)]" style={{ backgroundColor: "#030712", color: "var(--accent)" }}>{entry.context}</span>
                                                 {entry.room && <span className="text-[10px] sm:text-xs font-mono font-medium" style={{ color: "var(--text-muted)" }}>🏠 {entry.room}</span>}
                                                 <div className="flex-1"></div>
@@ -136,7 +136,7 @@ export default function ConsoleOutputTab({ serverId }: Props) {
                                                     <span className="text-[var(--text-secondary)]">T{entry.tick}</span>
                                                 </span>
                                             </div>
-                                            <p className={`text-sm mt-1 break-words leading-relaxed text-[var(--text-primary)] group-hover:text-white transition-colors ${isExpanded ? "" : "truncate"}`}>{entry.message}</p>
+                                            <p className={`text-sm break-words leading-relaxed text-[var(--text-primary)] group-hover:text-white transition-colors py-1 ${isExpanded ? "" : "truncate"}`}>{entry.message}</p>
                                         </div>
                                     </div>
                                 </div>

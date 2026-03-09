@@ -77,7 +77,7 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)", backdropFilter: "blur(4px)" }}>
             <div
-                className="w-full max-w-md rounded-xl p-6 shadow-xl"
+                className="w-full max-w-md rounded-xl p-8 shadow-xl"
                 style={{
                     backgroundColor: "var(--bg-card)",
                     border: "1px solid var(--border)"
@@ -112,7 +112,7 @@ export default function ServerModal({ server, onClose, onSave }: ServerModalProp
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
                             Server Name *

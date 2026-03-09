@@ -110,11 +110,11 @@ export default function EnergyTab({ serverId }: Props) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* KPI Cards Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-6">
                 {/* Empire total */}
-                <div className="glass-panel-interactive rounded-2xl p-5 flex flex-col col-span-2 lg:col-span-1">
+                <div className="glass-panel-interactive rounded-2xl p-6 flex flex-col col-span-2 lg:col-span-1">
                     <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">
                         🏛️ Empire Total
                     </p>
@@ -125,7 +125,7 @@ export default function EnergyTab({ serverId }: Props) {
 
                 {/* Per-room cards */}
                 {roomSummaries.map((r) => (
-                    <div key={r.room} className="glass-panel-interactive rounded-2xl p-5 flex flex-col">
+                    <div key={r.room} className="glass-panel-interactive rounded-2xl p-6 flex flex-col">
                         <p className="text-xs font-semibold mb-2 uppercase tracking-wider text-[var(--text-muted)]">
                             🏠 {r.room}
                         </p>
@@ -137,7 +137,7 @@ export default function EnergyTab({ serverId }: Props) {
             </div>
 
             {/* Empire Energy Over Time */}
-            <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+            <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
                 <div className="flex items-center justify-between mb-6 relative z-10">
                     <h3 className="text-base font-semibold text-[var(--text-primary)] flex items-center gap-2">
@@ -154,8 +154,8 @@ export default function EnergyTab({ serverId }: Props) {
                                 key={h}
                                 onClick={() => setHours(h)}
                                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer transition-all ${hours === h
-                                        ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]"
-                                        : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
+                                    ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent-glow)]"
+                                    : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"
                                     }`}
                             >
                                 {label}
@@ -203,7 +203,7 @@ export default function EnergyTab({ serverId }: Props) {
 
             {/* Per-Room Breakdown */}
             {data && data.rooms.length > 0 && data.chartData.length > 0 && (
-                <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                <div className="glass-panel rounded-2xl p-8 relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30"></div>
                     <h3 className="text-base font-semibold mb-6 text-[var(--text-primary)] flex items-center gap-2 relative z-10">
                         <span className="text-[var(--accent)]">🏠</span> Per-Room Energy Breakdown

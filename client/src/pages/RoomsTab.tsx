@@ -47,7 +47,7 @@ export default function RoomsTab({ serverId }: Props) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {roomNames.map((room) => {
                 const r = rooms[room];
                 const rcl = r.controllerLevel as number | undefined;
@@ -58,7 +58,7 @@ export default function RoomsTab({ serverId }: Props) {
                 return (
                     <div
                         key={room}
-                        className="glass-panel-interactive rounded-2xl p-6 relative overflow-hidden flex flex-col group border border-[var(--border-light)]"
+                        className="glass-panel-interactive rounded-2xl p-8 relative overflow-hidden flex flex-col group border border-[var(--border-light)]"
                     >
                         {/* Subtle top border highlight */}
                         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-30 group-hover:opacity-100 transition-opacity duration-300"></div>
