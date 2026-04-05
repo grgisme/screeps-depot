@@ -1,5 +1,11 @@
 # ScreepsDepot — AI Developer Guidelines
 
+> **[CONTEXT DIRECTORY]** If you need deep architectural or mechanical details regarding the Screeps engine logic being observed, read these files completely before assuming behavior:
+> - `/home/grgisme/code/tickforge/docs/screeps_game_reference.md` (Game mechanics, execution limits, intent queues)
+> - `/home/grgisme/code/tickforge/docs/tickforge_ai_reference.md` (TickForge engine, architecture, state flow)
+> - `/home/grgisme/code/tickforge/docs/test_pipeline_reference.md` (Scenarios, JSON logic, ladder CLI pipelines)
+> - `/home/grgisme/code/screepulous/docs/screepulous_ai_reference.md` (Bot WODE paradigm, OS execution, Hatchery)
+
 ## 📌 Project Context
 ScreepsDepot is a multi-tenant telemetry, observability, and log storage hub for the programming MMO game **Screeps**. It is designed to be hosted on Railway.app.
 
